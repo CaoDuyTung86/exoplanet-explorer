@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Rocket, Loader2, PanelLeft, Table2, Box, Volume2, VolumeX } from 'lucide-react'
+import { Rocket, PanelLeft, Table2, Box, Volume2, VolumeX } from 'lucide-react'
 import { useExplorerStore } from './stores/explorerStore'
 import { fetchExoplanets } from './services/nasaApi'
 import { playBgm, toggleAudioMute, isAudioMuted } from './services/audio'

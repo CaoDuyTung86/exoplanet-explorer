@@ -1,6 +1,5 @@
 import { create } from 'zustand'
-import type { ProcessedPlanet, FilterState } from '../types'
-import { DEFAULT_FILTERS } from '../types'
+import { type ProcessedPlanet, type FilterState, DEFAULT_FILTERS } from '../types'
 
 interface ExplorerState {
   // Data

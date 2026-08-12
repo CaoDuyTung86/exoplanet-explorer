@@ -1,6 +1,6 @@
 import { Howler } from 'howler'
 import { isAudioMuted } from './audio'
-import { ProcessedPlanet } from '../types'
+import type { ProcessedPlanet } from '../types'
 
 class AmbientSynth {
   private ctx: AudioContext | null = null

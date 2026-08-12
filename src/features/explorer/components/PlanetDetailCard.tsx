@@ -1,5 +1,5 @@
 import type { ProcessedPlanet } from '../types'
-import { X, Globe, Thermometer, Ruler, Weight, Calendar, Telescope, Star, Orbit } from 'lucide-react'
+import { X, Globe, Thermometer, Ruler, Weight, Telescope, Star, Orbit } from 'lucide-react'
 import { useExplorerStore } from '../stores/explorerStore'
 import { HabitabilityGauge } from './HabitabilityGauge'
 import { useTranslation } from 'react-i18next'

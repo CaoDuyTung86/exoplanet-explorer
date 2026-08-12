@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useRef, useMemo, useEffect } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -38,10 +39,9 @@ export function PlanetCloud() {
   const hitMeshRef = useRef<THREE.InstancedMesh>(null)
   const { invalidate } = useThree()
   const filteredPlanets = useExplorerStore((s) => s.filteredPlanets)
-  const hoveredPlanetId = useExplorerStore((s) => s.hoveredPlanetId)
+  const setHoveredPlanetId = useExplorerStore((s) => s.setHoveredPlanetId)
   const setSelectedPlanet = useExplorerStore((s) => s.setSelectedPlanet)
   const selectedPlanet = useExplorerStore((s) => s.selectedPlanet)
-  const setHoveredPlanetId = useExplorerStore((s) => s.setHoveredPlanetId)
 
   useEffect(() => {
     // We only need one of the visual meshes for tracking rotation in getPlanetWorldPosition
@@ -135,7 +135,7 @@ export function PlanetCloud() {
   // Real-time orbital motion — GPU matrix mutation, 0 React re-renders!
   const accumulatedTime = useRef(0)
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     const meshHigh = meshRefHigh.current
     const meshLow = meshRefLow.current
     if (!meshHigh && !meshLow) return

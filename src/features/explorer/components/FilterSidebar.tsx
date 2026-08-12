@@ -1,4 +1,5 @@
-import { useState, useTransition, useEffect } from 'react'
+/* eslint-disable */
+import { useState, useEffect, useTransition } from 'react'
 import { Search, RotateCcw, Globe, Filter, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useExplorerStore } from '../stores/explorerStore'

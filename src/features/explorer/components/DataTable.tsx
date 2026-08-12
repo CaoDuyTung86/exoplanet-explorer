@@ -1,5 +1,5 @@
 import { useExplorerStore } from '../stores/explorerStore'
-import { ProcessedPlanet } from '../types'
+import { type ProcessedPlanet } from '../types'
 import { Globe, Search, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'

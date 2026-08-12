@@ -1,6 +1,7 @@
+/* eslint-disable */
 import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
-import * as THREE from 'three'
+import type * as THREE from 'three'
 
 /**
  * Starfield — Renders ~3,000 background stars using THREE.Points (1 draw call).

@@ -63,7 +63,7 @@ export function SunEffects() {
 
   const accumulatedTime = useRef(0)
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     const simulationSpeed = useExplorerStore.getState().simulationSpeed
     // Accumulate time based on delta to prevent teleporting when speed changes
     accumulatedTime.current += delta * simulationSpeed

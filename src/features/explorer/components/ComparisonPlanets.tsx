@@ -1,6 +1,6 @@
 import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
-import * as THREE from 'three'
+import type * as THREE from 'three'
 import { useExplorerStore } from '../stores/explorerStore'
 import { getPlanetWorldPosition } from './PlanetCloud'
 import { Html } from '@react-three/drei'
