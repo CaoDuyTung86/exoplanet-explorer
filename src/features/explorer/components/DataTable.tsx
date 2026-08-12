@@ -2,10 +2,13 @@ import { useExplorerStore } from '../stores/explorerStore'
 import { ProcessedPlanet } from '../types'
 import { Globe, Search, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
+import { translateTerm } from '../lib/astronomyDictionary'
 
 type SortField = 'pl_name' | 'distanceLy' | 'pl_rade' | 'pl_bmasse' | 'pl_eqt' | 'habitabilityScore'
 
 export function DataTable() {
+  const { t, i18n } = useTranslation()
   const filteredPlanets = useExplorerStore((s) => s.filteredPlanets)
   const setSelectedPlanet = useExplorerStore((s) => s.setSelectedPlanet)
   const setViewMode = useExplorerStore((s) => s.setViewMode)
@@ -61,10 +64,10 @@ export function DataTable() {
       <div className='flex flex-wrap items-center justify-between gap-4 mb-4'>
         <div>
           <h2 className='text-lg font-bold text-white flex items-center gap-2'>
-            <span>📊 NASA Confirmed Exoplanet Database</span>
+            <span>📊 {t('table.database')}</span>
           </h2>
           <p className='text-xs text-white/40 mt-0.5'>
-            Click any row to inspect planet details and locate it on the 3D Star Map
+            {t('table.clickRow')}
           </p>
         </div>
 
@@ -79,13 +82,13 @@ export function DataTable() {
                 setTableSearch(e.target.value)
                 setCurrentPage(1)
               }}
-              placeholder='Search by planet or star name...'
+              placeholder={t('table.searchPlaceholder')}
               className='w-full rounded-lg border border-white/10 bg-white/5 py-1.5 pl-9 pr-3 text-xs text-white placeholder-white/30 focus:border-primary focus:outline-none'
             />
           </div>
 
           <div className='text-xs font-mono text-white/50 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10'>
-            Total: <strong className='text-emerald-400'>{processedData.length.toLocaleString()}</strong>
+            {t('table.total')}: <strong className='text-emerald-400'>{processedData.length.toLocaleString()}</strong>
           </div>
         </div>
       </div>
@@ -96,24 +99,24 @@ export function DataTable() {
           <thead className='sticky top-0 bg-slate-900/95 backdrop-blur-md text-white/40 border-b border-white/10 uppercase tracking-wider font-mono text-[10px] z-10'>
             <tr>
               <th className='py-3 px-4 cursor-pointer hover:text-white' onClick={() => handleSort('pl_name')}>
-                <div className='flex items-center gap-1'>Planet Name <ArrowUpDown className='h-3 w-3' /></div>
+                <div className='flex items-center gap-1'>{t('table.planetName')} <ArrowUpDown className='h-3 w-3' /></div>
               </th>
               <th className='py-3 px-4 cursor-pointer hover:text-white' onClick={() => handleSort('habitabilityScore')}>
-                <div className='flex items-center gap-1'>Habitability <ArrowUpDown className='h-3 w-3' /></div>
+                <div className='flex items-center gap-1'>{t('table.habitability')} <ArrowUpDown className='h-3 w-3' /></div>
               </th>
               <th className='py-3 px-4 cursor-pointer hover:text-white' onClick={() => handleSort('distanceLy')}>
-                <div className='flex items-center gap-1'>Distance (ly) <ArrowUpDown className='h-3 w-3' /></div>
+                <div className='flex items-center gap-1'>{t('table.distance')} <ArrowUpDown className='h-3 w-3' /></div>
               </th>
               <th className='py-3 px-4 cursor-pointer hover:text-white' onClick={() => handleSort('pl_rade')}>
-                <div className='flex items-center gap-1'>Radius (R⊕) <ArrowUpDown className='h-3 w-3' /></div>
+                <div className='flex items-center gap-1'>{t('table.radius')} <ArrowUpDown className='h-3 w-3' /></div>
               </th>
               <th className='py-3 px-4 cursor-pointer hover:text-white' onClick={() => handleSort('pl_bmasse')}>
-                <div className='flex items-center gap-1'>Mass (M⊕) <ArrowUpDown className='h-3 w-3' /></div>
+                <div className='flex items-center gap-1'>{t('table.mass')} <ArrowUpDown className='h-3 w-3' /></div>
               </th>
               <th className='py-3 px-4 cursor-pointer hover:text-white' onClick={() => handleSort('pl_eqt')}>
-                <div className='flex items-center gap-1'>Temp (K) <ArrowUpDown className='h-3 w-3' /></div>
+                <div className='flex items-center gap-1'>{t('table.temp')} <ArrowUpDown className='h-3 w-3' /></div>
               </th>
-              <th className='py-3 px-4'>Discovery</th>
+              <th className='py-3 px-4'>{t('table.discovery')}</th>
             </tr>
           </thead>
           <tbody className='divide-y divide-white/5 font-mono text-[11px]'>
@@ -152,14 +155,14 @@ export function DataTable() {
                     {planet.pl_eqt !== null ? `${planet.pl_eqt} K` : '—'}
                   </td>
                   <td className='py-3 px-4 text-white/40 text-[10px]'>
-                    {planet.discoverymethod} ({planet.disc_year})
+                    {translateTerm(planet.discoverymethod, i18n.language)} ({planet.disc_year})
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
                 <td colSpan={7} className='py-8 text-center text-white/40 italic'>
-                  No exoplanets found matching your criteria.
+                  {t('table.noResults')}
                 </td>
               </tr>
             )}
@@ -170,7 +173,7 @@ export function DataTable() {
       {/* Pagination Footer */}
       <div className='flex items-center justify-between pt-4 text-xs font-mono text-white/60'>
         <div className='flex items-center gap-2'>
-          <span>Rows per page:</span>
+          <span>{t('table.rowsPerPage')}</span>
           <select
             value={pageSize}
             onChange={(e) => {
@@ -185,7 +188,7 @@ export function DataTable() {
             <option value={200}>200</option>
           </select>
           <span className='ml-2 text-white/40'>
-            Showing {processedData.length > 0 ? startIndex + 1 : 0} - {Math.min(startIndex + pageSize, processedData.length)} of {processedData.length}
+            {t('sidebar.showing')} {processedData.length > 0 ? startIndex + 1 : 0} - {Math.min(startIndex + pageSize, processedData.length)} {t('table.ofPages')} {processedData.length}
           </span>
         </div>
 

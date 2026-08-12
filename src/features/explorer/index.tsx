@@ -7,8 +7,11 @@ import { StarMap3D } from './components/StarMap3D'
 import { PlanetDetailCard } from './components/PlanetDetailCard'
 import { FilterSidebar } from './components/FilterSidebar'
 import { DataTable } from './components/DataTable'
+import { LanguageToggle } from './components/LanguageToggle'
+import { useTranslation } from 'react-i18next'
 
 export function ExplorerPage() {
+  const { t, i18n } = useTranslation()
   const [isMuted, setIsMuted] = useState(() => isAudioMuted())
   const setPlanets = useExplorerStore((s) => s.setPlanets)
   const setLoading = useExplorerStore((s) => s.setLoading)
@@ -112,7 +115,7 @@ export function ExplorerPage() {
                   : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
               }`}
             >
-              <Box className='h-3.5 w-3.5' /> 3D Map
+              <Box className='h-3.5 w-3.5' /> {t('sidebar.viewMode.3d')}
             </button>
             <button
               onClick={() => setViewMode('table')}
@@ -122,15 +125,17 @@ export function ExplorerPage() {
                   : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
               }`}
             >
-              <Table2 className='h-3.5 w-3.5' /> Data Table
+              <Table2 className='h-3.5 w-3.5' /> {t('sidebar.viewMode.table')}
             </button>
           </div>
 
           {/* Planet count */}
           <div className='hidden h-8 items-center gap-2 rounded-lg border border-cyan-500/20 bg-slate-900/60 px-3 font-mono text-xs text-slate-300 backdrop-blur-md sm:flex'>
             <span className='h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' />
-            <span>{filteredPlanets.length.toLocaleString()} planets loaded</span>
+            <span>{filteredPlanets.length.toLocaleString()} {i18n.language.startsWith('vi') ? 'hành tinh' : 'planets loaded'}</span>
           </div>
+
+          <LanguageToggle />
 
           {/* Audio Mute toggle */}
           <button

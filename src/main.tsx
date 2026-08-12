@@ -5,6 +5,7 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { ThemeProvider } from './context/theme-provider'
 import { routeTree } from './routeTree.gen'
 import './styles/index.css'
+import './i18n' // Import i18n for multi-language support
 
 const queryClient = new QueryClient({
   defaultOptions: {

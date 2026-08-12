@@ -2,6 +2,8 @@ import type { ProcessedPlanet } from '../types'
 import { X, Globe, Thermometer, Ruler, Weight, Calendar, Telescope, Star, Orbit } from 'lucide-react'
 import { useExplorerStore } from '../stores/explorerStore'
 import { HabitabilityGauge } from './HabitabilityGauge'
+import { useTranslation } from 'react-i18next'
+import { translateTerm } from '../lib/astronomyDictionary'
 
 function formatNumber(n: number | null, decimals = 1): string {
   if (n === null || n === undefined) return '—'
@@ -9,6 +11,7 @@ function formatNumber(n: number | null, decimals = 1): string {
 }
 
 export function PlanetDetailCard() {
+  const { t, i18n } = useTranslation()
   const planet = useExplorerStore((s) => s.selectedPlanet)
   const setSelectedPlanet = useExplorerStore((s) => s.setSelectedPlanet)
   const showComparison = useExplorerStore((s) => s.showComparison)
@@ -31,12 +34,12 @@ export function PlanetDetailCard() {
 
         <div className='pr-8'>
           <span className='mb-1 inline-block rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary'>
-            {planet.sizeCategory}
+            {translateTerm(planet.sizeCategory, i18n.language)}
           </span>
           <h2 className='text-xl font-bold text-white'>{planet.pl_name}</h2>
           <p className='mt-0.5 flex items-center gap-1.5 text-sm text-white/50'>
             <Star className='h-3.5 w-3.5' />
-            Host star: <span className='font-medium text-white/70'>{planet.hostname}</span>
+            {t('detailCard.hostStar')}: <span className='font-medium text-white/70'>{planet.hostname}</span>
           </p>
         </div>
       </div>
@@ -50,62 +53,62 @@ export function PlanetDetailCard() {
       <div className='grid grid-cols-2 gap-px border-b border-white/10 bg-white/5'>
         <StatCell
           icon={<Ruler className='h-3.5 w-3.5 text-blue-400' />}
-          label='Radius'
+          label={t('detailCard.radius')}
           value={planet.pl_rade !== null ? `${formatNumber(planet.pl_rade)} R⊕` : '—'}
           sub={earthComparison.radius}
         />
         <StatCell
           icon={<Weight className='h-3.5 w-3.5 text-amber-400' />}
-          label='Mass'
+          label={t('detailCard.mass')}
           value={planet.pl_bmasse !== null ? `${formatNumber(planet.pl_bmasse)} M⊕` : '—'}
           sub={earthComparison.mass}
         />
         <StatCell
           icon={<Thermometer className='h-3.5 w-3.5 text-red-400' />}
-          label='Temperature'
+          label={t('detailCard.temperature')}
           value={planet.pl_eqt !== null ? `${formatNumber(planet.pl_eqt, 0)} K` : '—'}
           sub={planet.pl_eqt !== null ? `${Math.round(planet.pl_eqt - 273)}°C` : undefined}
         />
         <StatCell
           icon={<Globe className='h-3.5 w-3.5 text-emerald-400' />}
-          label='Distance'
+          label={t('detailCard.distance')}
           value={`${formatNumber(planet.distanceLy, 1)} ly`}
-          sub='light-years'
+          sub={t('detailCard.lightYears')}
         />
         <StatCell
           icon={<Orbit className='h-3.5 w-3.5 text-purple-400' />}
-          label='Orbital Period'
-          value={planet.pl_orbper !== null ? `${formatNumber(planet.pl_orbper)} days` : '—'}
-          sub={planet.pl_orbper !== null && planet.pl_orbper > 365 ? `~${(planet.pl_orbper / 365.25).toFixed(1)} years` : undefined}
+          label={t('detailCard.orbitPeriod')}
+          value={planet.pl_orbper !== null ? `${formatNumber(planet.pl_orbper)} ${t('detailCard.days')}` : '—'}
+          sub={planet.pl_orbper !== null && planet.pl_orbper > 365 ? `~${(planet.pl_orbper / 365.25).toFixed(1)} ${t('detailCard.year').toLowerCase()}s` : undefined}
         />
         <StatCell
           icon={<Telescope className='h-3.5 w-3.5 text-cyan-400' />}
-          label='Discovery'
-          value={planet.discoverymethod}
-          sub={planet.disc_year !== null ? `Year ${planet.disc_year}` : undefined}
+          label={t('detailCard.discovery')}
+          value={translateTerm(planet.discoverymethod, i18n.language)}
+          sub={planet.disc_year !== null ? `${t('detailCard.year')} ${planet.disc_year}` : undefined}
         />
       </div>
 
       {/* Star info */}
       <div className='p-4 text-xs text-white/50'>
-        <div className='mb-1 font-semibold uppercase tracking-wider text-white/30'>Host Star Properties</div>
+        <div className='mb-1 font-semibold uppercase tracking-wider text-white/30'>{t('detailCard.hostStarProperties')}</div>
         <div className='grid grid-cols-3 gap-2'>
           <div>
-            <span className='block text-white/30'>Spectral</span>
+            <span className='block text-white/30'>{t('detailCard.spectral')}</span>
             <span className='font-mono text-white/70'>{planet.st_spectype || '—'}</span>
           </div>
           <div>
-            <span className='block text-white/30'>Temp</span>
+            <span className='block text-white/30'>{t('detailCard.temp')}</span>
             <span className='font-mono text-white/70'>{planet.st_teff ? `${planet.st_teff} K` : '—'}</span>
           </div>
           <div>
-            <span className='block text-white/30'>Radius</span>
+            <span className='block text-white/30'>{t('detailCard.radius')}</span>
             <span className='font-mono text-white/70'>{planet.st_rad ? `${planet.st_rad} R☉` : '—'}</span>
           </div>
         </div>
         {planet.disc_telescope && (
           <div className='mt-2 border-t border-white/5 pt-2'>
-            <span className='text-white/30'>Telescope: </span>
+            <span className='text-white/30'>{t('detailCard.telescope')}: </span>
             <span className='text-white/60'>{planet.disc_telescope}</span>
           </div>
         )}
@@ -114,12 +117,12 @@ export function PlanetDetailCard() {
       {/* Earth Comparison Bar */}
       <div className='border-t border-white/10 bg-emerald-500/5 p-4'>
         <div className='mb-2 text-[10px] font-semibold uppercase tracking-wider text-emerald-400/80'>
-          Compared to Earth
+          {t('detailCard.comparedToEarth')}
         </div>
         <div className='space-y-2'>
-          <ComparisonBar label='Size' ratio={planet.pl_rade ?? 0} max={20} color='blue' />
-          <ComparisonBar label='Mass' ratio={Math.log10(Math.max(1, planet.pl_bmasse ?? 1))} max={4} color='amber' />
-          <ComparisonBar label='Habitability' ratio={planet.habitabilityScore} max={100} color='emerald' />
+          <ComparisonBar label={t('detailCard.size')} ratio={planet.pl_rade ?? 0} max={20} color='blue' />
+          <ComparisonBar label={t('detailCard.mass')} ratio={Math.log10(Math.max(1, planet.pl_bmasse ?? 1))} max={4} color='amber' />
+          <ComparisonBar label={t('detailCard.habitability')} ratio={planet.habitabilityScore} max={100} color='emerald' />
         </div>
       </div>
 
@@ -129,8 +132,8 @@ export function PlanetDetailCard() {
           <div className='flex items-center gap-2'>
             <Globe className='h-4 w-4 text-blue-400' />
             <div>
-              <div className='text-xs font-semibold text-white/90'>3D Size Comparison</div>
-              <div className='text-[9px] text-white/40'>Summon Earth & Jupiter</div>
+              <div className='text-xs font-semibold text-white/90'>{t('detailCard.sizeComparison3d')}</div>
+              <div className='text-[9px] text-white/40'>{t('detailCard.summonEarthJupiter')}</div>
             </div>
           </div>
           <button

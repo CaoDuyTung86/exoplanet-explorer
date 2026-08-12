@@ -1,9 +1,11 @@
 import { useState, useTransition, useEffect } from 'react'
 import { Search, RotateCcw, Globe, Filter, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useExplorerStore } from '../stores/explorerStore'
 import { DISCOVERY_METHODS } from '../types'
 
 export function FilterSidebar() {
+  const { t } = useTranslation()
   const filters = useExplorerStore((s) => s.filters)
   const setFilters = useExplorerStore((s) => s.setFilters)
   const resetFilters = useExplorerStore((s) => s.resetFilters)
@@ -19,14 +21,14 @@ export function FilterSidebar() {
         <div className='flex items-center justify-between'>
           <h3 className='flex items-center gap-2 text-sm font-bold text-white'>
             <Filter className='h-4 w-4 text-primary' />
-            Filters
+            {t('sidebar.title')}
           </h3>
           <div className="flex items-center gap-2">
             <button
               onClick={resetFilters}
               className='flex items-center gap-1 rounded px-2 py-1 text-[10px] text-white/40 transition-colors hover:bg-white/5 hover:text-white/70'
             >
-              <RotateCcw className='h-3 w-3' /> Reset
+              <RotateCcw className='h-3 w-3' /> {t('sidebar.reset')}
             </button>
             {/* Mobile close button (visible only on small screens) */}
             <button
@@ -38,7 +40,7 @@ export function FilterSidebar() {
           </div>
         </div>
         <div className='mt-2 text-[11px] text-white/30'>
-          Showing <strong className='text-primary'>{filteredPlanets.length.toLocaleString()}</strong> of {planets.length.toLocaleString()} planets
+          {t('sidebar.showing')} <strong className='text-primary'>{filteredPlanets.length.toLocaleString()}</strong> {t('sidebar.of')} {planets.length.toLocaleString()} {t('sidebar.planets')}
         </div>
       </div>
 
@@ -46,7 +48,7 @@ export function FilterSidebar() {
         {/* Search */}
         <div>
           <label className='mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-white/30'>
-            Planet / Star Name
+            {t('sidebar.searchLabel')}
           </label>
           <div className='relative'>
             <Search className='absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20' />
@@ -60,7 +62,7 @@ export function FilterSidebar() {
                   useExplorerStore.getState().setSidebarOpen(false) // Close sidebar on mobile
                 }
               }}
-              placeholder='e.g. Kepler-442, TRAPPIST...'
+              placeholder={t('sidebar.searchPlaceholder')}
               className='w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-8 pr-3 text-xs text-white placeholder:text-white/20 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30'
             />
           </div>
@@ -70,7 +72,7 @@ export function FilterSidebar() {
         <div className='flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3'>
           <div className='flex items-center gap-2'>
             <Globe className='h-4 w-4 text-emerald-400' />
-            <span className='text-xs font-semibold text-emerald-300'>Habitable Zone Only</span>
+            <span className='text-xs font-semibold text-emerald-300'>{t('sidebar.habitability')}</span>
           </div>
           <button
             onClick={() => setFilters({ showHabitableOnly: !filters.showHabitableOnly })}
@@ -90,7 +92,7 @@ export function FilterSidebar() {
         <div className='flex items-center justify-between rounded-lg border border-purple-500/20 bg-purple-500/5 p-3'>
           <div className='flex items-center gap-2'>
             <Globe className='h-4 w-4 text-purple-400' />
-            <span className='text-xs font-semibold text-purple-300'>Scientific Overlays</span>
+            <span className='text-xs font-semibold text-purple-300'>{t('sidebar.scientificOverlays')}</span>
           </div>
           <button
             onClick={() => useExplorerStore.getState().setShowScientificOverlays(!useExplorerStore.getState().showScientificOverlays)}

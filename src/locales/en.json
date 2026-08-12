@@ -1,0 +1,72 @@
+{
+  "sidebar": {
+    "title": "Exoplanet Explorer",
+    "searchPlaceholder": "e.g. Kepler-442, TRAPPIST...",
+    "searchLabel": "Planet / Star Name",
+    "reset": "Reset",
+    "showing": "Showing",
+    "of": "of",
+    "planets": "planets",
+    "radiusRange": "Radius Range (Earth Radii)",
+    "massRange": "Mass Range (Earth Masses)",
+    "temperatureRange": "Equilibrium Temp (K)",
+    "habitability": "Habitability Zone Only",
+    "viewMode": {
+      "3d": "3D View",
+      "table": "Table View"
+    },
+    "simulationSpeed": "Simulation Speed",
+    "speed": {
+      "paused": "Paused",
+      "fast": "Fast"
+    },
+    "toggleComparison": "Toggle Size Comparison",
+    "toggleScientific": "Toggle Scientific Overlays",
+    "scientificOverlays": "Scientific Overlays"
+  },
+  "detailCard": {
+    "system": "System",
+    "planetType": "Planet Type",
+    "mass": "Mass",
+    "radius": "Radius",
+    "temperature": "Equilibrium Temp",
+    "distance": "Distance",
+    "discovery": "Discovery",
+    "year": "Year",
+    "habitability": "Habitability Score",
+    "earthMasses": "Earth masses",
+    "earthRadii": "Earth radii",
+    "lightYears": "light-years",
+    "days": "days",
+    "orbitPeriod": "Orbital Period",
+    "semiMajorAxis": "Semi-Major Axis",
+    "hostStarProperties": "Host Star Properties",
+    "spectral": "Spectral",
+    "temp": "Temp",
+    "telescope": "Telescope",
+    "comparedToEarth": "Compared to Earth",
+    "size": "Size",
+    "sizeComparison3d": "3D Size Comparison",
+    "summonEarthJupiter": "Summon Earth & Jupiter"
+  },
+  "table": {
+    "database": "NASA Confirmed Exoplanet Database",
+    "clickRow": "Click any row to inspect planet details and locate it on the 3D Star Map",
+    "searchPlaceholder": "Search by planet or star name...",
+    "total": "Total",
+    "noResults": "No exoplanets found matching your criteria.",
+    "rowsPerPage": "Rows per page:",
+    "page": "Page",
+    "ofPages": "of",
+    "planetName": "Planet Name",
+    "habitability": "Habitability",
+    "hostStar": "Host Star",
+    "radius": "Radius (R⊕)",
+    "mass": "Mass (M⊕)",
+    "temp": "Temp (K)",
+    "distance": "Dist (ly)",
+    "type": "Type",
+    "discovery": "Discovery Method",
+    "year": "Year"
+  }
+}

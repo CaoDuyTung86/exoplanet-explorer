@@ -1,0 +1,72 @@
+{
+  "sidebar": {
+    "title": "Bản Đồ Ngoại Hành Tinh",
+    "searchPlaceholder": "vd: Kepler-442, TRAPPIST...",
+    "searchLabel": "Tên Hành Tinh / Hệ Sao",
+    "reset": "Đặt Lại",
+    "showing": "Hiển thị",
+    "of": "trong",
+    "planets": "hành tinh",
+    "radiusRange": "Bán kính (x Lần Trái Đất)",
+    "massRange": "Khối lượng (x Lần Trái Đất)",
+    "temperatureRange": "Nhiệt độ bề mặt (K)",
+    "habitability": "Chỉ hiện Vành đai sống được",
+    "viewMode": {
+      "3d": "Không gian 3D",
+      "table": "Bảng Dữ Liệu"
+    },
+    "simulationSpeed": "Tốc độ giả lập",
+    "speed": {
+      "paused": "Tạm dừng",
+      "fast": "Rất nhanh"
+    },
+    "toggleComparison": "Bật/Tắt So sánh kích thước",
+    "toggleScientific": "Bật/Tắt Khung tọa độ khoa học",
+    "scientificOverlays": "Khung tọa độ khoa học"
+  },
+  "detailCard": {
+    "system": "Hệ Sao",
+    "planetType": "Phân loại",
+    "mass": "Khối lượng",
+    "radius": "Bán kính",
+    "temperature": "Nhiệt độ",
+    "distance": "Khoảng cách",
+    "discovery": "Khám phá",
+    "year": "Năm",
+    "habitability": "Điểm sống được (Habitability)",
+    "earthMasses": "khối lượng T.Đất",
+    "earthRadii": "bán kính T.Đất",
+    "lightYears": "năm ánh sáng",
+    "days": "ngày",
+    "orbitPeriod": "Chu kỳ quỹ đạo",
+    "semiMajorAxis": "Bán trục lớn (Khoảng cách đến sao)",
+    "hostStarProperties": "Thông số sao chủ",
+    "spectral": "Quang phổ",
+    "temp": "Nhiệt độ",
+    "telescope": "Kính viễn vọng",
+    "comparedToEarth": "So sánh với Trái Đất",
+    "size": "Kích thước",
+    "sizeComparison3d": "Mô hình so sánh 3D",
+    "summonEarthJupiter": "Triệu hồi Trái Đất & Sao Mộc"
+  },
+  "table": {
+    "database": "Dữ liệu Ngoại hành tinh xác nhận bởi NASA",
+    "clickRow": "Bấm vào bất kỳ hàng nào để xem chi tiết và di chuyển tới hành tinh đó",
+    "searchPlaceholder": "Tìm kiếm theo tên hành tinh hoặc hệ sao...",
+    "total": "Tổng số",
+    "noResults": "Không tìm thấy hành tinh nào khớp với tìm kiếm của bạn.",
+    "rowsPerPage": "Số hàng mỗi trang:",
+    "page": "Trang",
+    "ofPages": "trong",
+    "planetName": "Tên Hành Tinh",
+    "habitability": "Khả năng sống",
+    "hostStar": "Hệ Sao",
+    "radius": "Bán Kính (R⊕)",
+    "mass": "Khối Lượng (M⊕)",
+    "temp": "Nhiệt Độ (K)",
+    "distance": "KC (Năm ánh sáng)",
+    "type": "Phân Loại",
+    "discovery": "Phương Pháp Khám Phá",
+    "year": "Năm"
+  }
+}
