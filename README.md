@@ -2,7 +2,7 @@
 
 An immersive, highly optimized 3D web application that visualizes over 5,700 confirmed exoplanets using real data from the NASA Exoplanet Archive. Built with React, Three.js, and WebGL, this project pushes the boundaries of browser-based 3D rendering and procedural generation.
 
-![Exoplanet Explorer Banner]"C:\Users\tungg\Pictures\vutru.jpg"
+![Exoplanet Explorer Banner]<img width="675" height="366" alt="vutru" src="https://github.com/user-attachments/assets/a48d002b-8743-443f-af0b-f397a3fd9d6b" />
 
 ## 🚀 Key Features
 
