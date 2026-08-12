@@ -2,11 +2,12 @@
 import { useState, useEffect, useTransition } from 'react'
 import { Search, RotateCcw, Globe, Filter, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { translateTerm } from '../lib/astronomyDictionary'
 import { useExplorerStore } from '../stores/explorerStore'
 import { DISCOVERY_METHODS } from '../types'
 
 export function FilterSidebar() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const filters = useExplorerStore((s) => s.filters)
   const setFilters = useExplorerStore((s) => s.setFilters)
   const resetFilters = useExplorerStore((s) => s.resetFilters)
@@ -113,7 +114,7 @@ export function FilterSidebar() {
         <div>
           <div className='mb-1.5 flex items-center justify-between'>
             <label className='text-[10px] font-semibold uppercase tracking-wider text-white/30'>
-              Simulation Speed
+              {t('sidebar.simulationSpeed')}
             </label>
             <span className='font-mono text-[10px] font-bold text-primary'>
               {simulationSpeed.toFixed(1)}x
@@ -132,35 +133,35 @@ export function FilterSidebar() {
 
         {/* Range Sliders */}
         <RangeFilter
-          label='Planet Radius (R⊕)'
+          label={t('sidebar.radiusRange')}
           min={0} max={30} step={0.5}
           value={filters.radiusRange}
           onChange={(v) => setFilters({ radiusRange: v })}
         />
 
         <RangeFilter
-          label='Temperature (K)'
+          label={t('sidebar.temperatureRange')}
           min={0} max={5000} step={50}
           value={filters.tempRange}
           onChange={(v) => setFilters({ tempRange: v })}
         />
 
         <RangeFilter
-          label='Distance (light-years)'
+          label={t('sidebar.distanceRange')}
           min={0} max={10000} step={100}
           value={filters.distanceRange}
           onChange={(v) => setFilters({ distanceRange: v })}
         />
 
         <RangeFilter
-          label='Orbital Period (days)'
+          label={t('sidebar.orbitalPeriodRange')}
           min={0} max={10000} step={10}
           value={filters.orbitalPeriodRange}
           onChange={(v) => setFilters({ orbitalPeriodRange: v })}
         />
 
         <RangeFilter
-          label='Discovery Year'
+          label={t('sidebar.discoveryYear')}
           min={1992} max={2026} step={1}
           value={filters.yearRange}
           onChange={(v) => setFilters({ yearRange: v })}
@@ -169,7 +170,7 @@ export function FilterSidebar() {
         {/* Discovery Method */}
         <div>
           <label className='mb-2 block text-[10px] font-semibold uppercase tracking-wider text-white/30'>
-            Discovery Method
+            {t('sidebar.discoveryMethod')}
           </label>
           <div className='flex flex-wrap gap-1.5'>
             {DISCOVERY_METHODS.slice(0, 6).map((method) => {
@@ -189,7 +190,7 @@ export function FilterSidebar() {
                       : 'border-white/10 bg-white/5 text-white/40 hover:border-white/20 hover:text-white/60'
                   }`}
                 >
-                  {method}
+                  {translateTerm(method, i18n.language)}
                 </button>
               )
             })}
@@ -199,7 +200,7 @@ export function FilterSidebar() {
         {/* Spectral Type */}
         <div>
           <label className='mb-2 block text-[10px] font-semibold uppercase tracking-wider text-white/30'>
-            Spectral Type (Star Class)
+            {t('sidebar.spectralType')}
           </label>
           <div className='flex flex-wrap gap-1.5'>
             {['O', 'B', 'A', 'F', 'G', 'K', 'M'].map((type) => {

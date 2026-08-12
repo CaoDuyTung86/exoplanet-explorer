@@ -19,7 +19,7 @@ export function PlanetDetailCard() {
 
   if (!planet) return null
 
-  const earthComparison = getEarthComparison(planet)
+  const earthComparison = getEarthComparison(planet, t)
 
   return (
     <div className='pointer-events-auto absolute left-2 right-2 bottom-2 md:left-auto md:bottom-auto md:right-4 md:top-4 z-30 w-auto md:w-[380px] max-h-[50vh] md:max-h-[calc(100vh-8rem)] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/90 shadow-2xl shadow-primary/10 backdrop-blur-xl'>
@@ -109,7 +109,9 @@ export function PlanetDetailCard() {
         {planet.disc_telescope && (
           <div className='mt-2 border-t border-white/5 pt-2'>
             <span className='text-white/30'>{t('detailCard.telescope')}: </span>
-            <span className='text-white/60'>{planet.disc_telescope}</span>
+            <span className='text-white/60'>
+              {planet.disc_telescope.includes('Multiple') ? t('detailCard.multipleTelescopes') : planet.disc_telescope}
+            </span>
           </div>
         )}
       </div>
@@ -157,7 +159,7 @@ export function PlanetDetailCard() {
           onClick={() => setSelectedPlanet(null)}
           className='w-full rounded-xl bg-white/10 py-2 text-xs font-semibold text-white hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2 border border-white/10 shadow-lg'
         >
-          <span>←</span> Quay lại Bản đồ (Hủy Spectate)
+          <span>←</span> {t('controls.backToMap')}
         </button>
       </div>
     </div>
@@ -197,13 +199,13 @@ function ComparisonBar({ label, ratio, max, color }: { label: string; ratio: num
   )
 }
 
-function getEarthComparison(planet: ProcessedPlanet) {
+function getEarthComparison(planet: ProcessedPlanet, t: (key: string) => string) {
   return {
     radius: planet.pl_rade !== null
-      ? planet.pl_rade < 0.9 ? 'Smaller than Earth' : planet.pl_rade <= 1.1 ? '≈ Earth-sized!' : `${planet.pl_rade.toFixed(1)}× Earth`
+      ? planet.pl_rade < 0.9 ? t('detailCard.comparison.smallerThanEarth') : planet.pl_rade <= 1.1 ? t('detailCard.comparison.earthSized') : `${planet.pl_rade.toFixed(1)}${t('detailCard.comparison.earthRadiiMultiple')}`
       : undefined,
     mass: planet.pl_bmasse !== null
-      ? planet.pl_bmasse < 0.8 ? 'Lighter than Earth' : planet.pl_bmasse <= 1.2 ? '≈ Earth mass!' : `${planet.pl_bmasse.toFixed(1)}× Earth`
+      ? planet.pl_bmasse < 0.8 ? t('detailCard.comparison.lighterThanEarth') : planet.pl_bmasse <= 1.2 ? t('detailCard.comparison.earthMass') : `${planet.pl_bmasse.toFixed(1)}${t('detailCard.comparison.earthMassMultiple')}`
       : undefined,
   }
 }

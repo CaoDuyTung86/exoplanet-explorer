@@ -1,7 +1,7 @@
 import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { useTexture } from '@react-three/drei'
+import { useTexture, Line } from '@react-three/drei'
 import { useExplorerStore } from '../stores/explorerStore'
 import { playSound } from '../services/audio'
 
@@ -49,16 +49,15 @@ export function SunEffects() {
     }
   }
 
-  // Solar orbit radii for all 8 planets matching exact 3D positioning
   const orbitRadii = [
-    { name: 'Mercury', radius: 2.4, color: '#94a3b8' }, // Slate
-    { name: 'Venus', radius: 3.2, color: '#facc15' },   // Golden Yellow
-    { name: 'Earth', radius: 4.3, color: '#3b82f6' },   // Blue Marble
-    { name: 'Mars', radius: 5.6, color: '#ef4444' },    // Rust Red
-    { name: 'Jupiter', radius: 8.5, color: '#f97316' },  // Amber Orange
-    { name: 'Saturn', radius: 12.0, color: '#fef08a' }, // Saturn Gold
-    { name: 'Uranus', radius: 15.5, color: '#06b6d4' }, // Cyan
-    { name: 'Neptune', radius: 18.5, color: '#3b82f6' }, // Deep Blue
+    { name: 'Mercury', radius: 3.5, color: '#94a3b8' }, // Slate
+    { name: 'Venus', radius: 5.0, color: '#facc15' },   // Golden Yellow
+    { name: 'Earth', radius: 7.0, color: '#3b82f6' },   // Blue Marble
+    { name: 'Mars', radius: 9.0, color: '#ef4444' },    // Rust Red
+    { name: 'Jupiter', radius: 14.0, color: '#f97316' },  // Amber Orange
+    { name: 'Saturn', radius: 19.0, color: '#fef08a' }, // Saturn Gold
+    { name: 'Uranus', radius: 24.0, color: '#06b6d4' }, // Cyan
+    { name: 'Neptune', radius: 29.0, color: '#3b82f6' }, // Deep Blue
   ]
 
   const accumulatedTime = useRef(0)
@@ -142,17 +141,29 @@ export function SunEffects() {
 
       {/* ⭕ Orbital Path Rings for Solar System Planets */}
       {orbitRadii.map((orbit) => (
-        <mesh key={orbit.name} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[orbit.radius - 0.03, orbit.radius + 0.03, 64]} />
-          <meshBasicMaterial
-            color={orbit.color}
-            transparent
-            opacity={0.25}
-            side={THREE.DoubleSide}
-            blending={THREE.AdditiveBlending}
-          />
-        </mesh>
+        <OrbitRing key={orbit.name} radius={orbit.radius} color={orbit.color} />
       ))}
     </group>
+  )
+}
+
+function OrbitRing({ radius, color }: { radius: number; color: string }) {
+  const points = useMemo(() => {
+    const pts = []
+    for (let i = 0; i <= 128; i++) {
+      const angle = (i / 128) * Math.PI * 2
+      pts.push(new THREE.Vector3(Math.cos(angle) * radius, 0, Math.sin(angle) * radius))
+    }
+    return pts
+  }, [radius])
+
+  return (
+    <Line
+      points={points}
+      color={color}
+      lineWidth={1.5}
+      transparent
+      opacity={0.15}
+    />
   )
 }

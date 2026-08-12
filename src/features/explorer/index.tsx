@@ -96,7 +96,7 @@ export function ExplorerPage() {
 
           <div className='flex items-center gap-2'>
             <Rocket className='h-5 w-5 text-primary' />
-            <h1 className='text-sm font-bold tracking-wide'>EXOPLANET EXPLORER</h1>
+            <h1 className='text-sm font-bold tracking-wide'>{t('appName')}</h1>
           </div>
 
           <span className='rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary'>
@@ -163,10 +163,10 @@ export function ExplorerPage() {
             </div>
             <div className="pt-2 text-center">
               <h2 className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text font-mono text-2xl font-bold tracking-widest text-transparent">
-                INITIALIZING UNIVERSE
+                {t('loading.title')}
               </h2>
               <p className="mt-3 font-mono text-sm text-cyan-500/70">
-                Processing 5,700+ confirmed exoplanets...
+                {t('loading.subtitle')}
               </p>
             </div>
           </div>
@@ -204,7 +204,7 @@ export function ExplorerPage() {
               <div className='pointer-events-none absolute left-4 top-4 z-20 space-y-2'>
                 <div className='rounded-xl border border-white/10 bg-slate-950/80 p-3 backdrop-blur-md'>
                   <div className='text-[10px] font-semibold uppercase tracking-wider text-white/30'>
-                    Visible Exoplanets
+                    {t('stats.visibleExoplanets')}
                   </div>
                   <div className='mt-0.5 text-2xl font-black text-white'>
                     {filteredPlanets.length.toLocaleString()}
@@ -213,7 +213,7 @@ export function ExplorerPage() {
 
                 <div className='rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 backdrop-blur-md'>
                   <div className='text-[10px] font-semibold uppercase tracking-wider text-emerald-400/50'>
-                    Habitable Candidates
+                    {t('stats.habitableCandidates')}
                   </div>
                   <div className='mt-0.5 text-2xl font-black text-emerald-400'>
                     {filteredPlanets.filter((p) => p.isHabitable).length}
@@ -228,7 +228,7 @@ export function ExplorerPage() {
                     onClick={() => useExplorerStore.getState().triggerCameraReset()}
                     className='pointer-events-auto rounded-full border border-white/10 bg-black/60 px-4 py-2 text-xs font-semibold text-white/70 shadow-xl backdrop-blur-md transition-all hover:bg-white/10 hover:text-white'
                   >
-                    Reset View
+                    {t('controls.resetView')}
                   </button>
                 </div>
               )}

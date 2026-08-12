@@ -1,4 +1,28 @@
 {
+  "appName": "BẢN ĐỒ NGOẠI HÀNH TINH",
+  "loading": {
+    "title": "KÍCH HOẠT VŨ TRỤ",
+    "subtitle": "Đang xử lý hơn 5.700 ngoại hành tinh đã xác nhận..."
+  },
+  "stats": {
+    "visibleExoplanets": "HÀNH TINH HIỂN THỊ",
+    "habitableCandidates": "ỨNG VIÊN CÓ THỂ SỐNG"
+  },
+  "controls": {
+    "spectating": "ĐANG QUAN SÁT",
+    "exitEsc": "Thoát [Esc]",
+    "spectatingHint": "🛸 Đang quan sát — cuộn chuột để zoom · kéo chuột để xoay 360°",
+    "defaultHint": "☀️ Hệ Mặt Trời ở trung tâm · bấm hành tinh để quan sát",
+    "exit": "Thoát",
+    "resetView": "Đặt lại góc nhìn",
+    "focusHovered": "Tập trung hành tinh",
+    "backToMap": "Quay lại Bản đồ (Hủy Quan sát)"
+  },
+  "tooltip": {
+    "distance": "Khoảng cách",
+    "type": "Loại",
+    "unknown": "Chưa rõ"
+  },
   "sidebar": {
     "title": "Bản Đồ Ngoại Hành Tinh",
     "searchPlaceholder": "vd: Kepler-442, TRAPPIST...",
@@ -7,9 +31,14 @@
     "showing": "Hiển thị",
     "of": "trong",
     "planets": "hành tinh",
-    "radiusRange": "Bán kính (x Lần Trái Đất)",
-    "massRange": "Khối lượng (x Lần Trái Đất)",
-    "temperatureRange": "Nhiệt độ bề mặt (K)",
+    "radiusRange": "Bán kính hành tinh (R⊕)",
+    "massRange": "Khối lượng hành tinh (M⊕)",
+    "temperatureRange": "Nhiệt độ cân bằng (K)",
+    "distanceRange": "Khoảng cách (Năm ánh sáng)",
+    "orbitalPeriodRange": "Chu kỳ quỹ đạo (Ngày)",
+    "discoveryYear": "Năm Khám Phá",
+    "discoveryMethod": "Phương Pháp Khám Phá",
+    "spectralType": "Loại Sao (Lớp Quang Phổ)",
     "habitability": "Chỉ hiện Vành đai sống được",
     "viewMode": {
       "3d": "Không gian 3D",
@@ -25,6 +54,7 @@
     "scientificOverlays": "Khung tọa độ khoa học"
   },
   "detailCard": {
+    "hostStar": "Sao chủ",
     "system": "Hệ Sao",
     "planetType": "Phân loại",
     "mass": "Khối lượng",
@@ -33,7 +63,7 @@
     "distance": "Khoảng cách",
     "discovery": "Khám phá",
     "year": "Năm",
-    "habitability": "Điểm sống được (Habitability)",
+    "habitability": "Điểm sống được",
     "earthMasses": "khối lượng T.Đất",
     "earthRadii": "bán kính T.Đất",
     "lightYears": "năm ánh sáng",
@@ -47,7 +77,23 @@
     "comparedToEarth": "So sánh với Trái Đất",
     "size": "Kích thước",
     "sizeComparison3d": "Mô hình so sánh 3D",
-    "summonEarthJupiter": "Triệu hồi Trái Đất & Sao Mộc"
+    "summonEarthJupiter": "Triệu hồi Trái Đất & Sao Mộc",
+    "multipleTelescopes": "Nhiều kính thiên văn",
+    "gauge": {
+      "highlyPromising": "Khả năng sống rất cao",
+      "potentiallyHabitable": "Có thể sống được",
+      "lowProbability": "Xác suất thấp",
+      "unlikelyHabitable": "Khó có thể sống",
+      "desc": "Dựa trên nhiệt độ, bán kính, khối lượng và loại sao chủ so với điều kiện Trái Đất."
+    },
+    "comparison": {
+      "smallerThanEarth": "Nhỏ hơn Trái Đất",
+      "earthSized": "≈ Kích thước Trái Đất!",
+      "earthRadiiMultiple": "× Trái Đất",
+      "lighterThanEarth": "Nhẹ hơn Trái Đất",
+      "earthMass": "≈ Khối lượng Trái Đất!",
+      "earthMassMultiple": "× Trái Đất"
+    }
   },
   "table": {
     "database": "Dữ liệu Ngoại hành tinh xác nhận bởi NASA",

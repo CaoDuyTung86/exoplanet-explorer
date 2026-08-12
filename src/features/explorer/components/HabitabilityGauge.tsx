@@ -1,9 +1,13 @@
+import { useTranslation } from 'react-i18next'
+
 export function HabitabilityGauge({ score }: { score: number }) {
+  const { t } = useTranslation()
+
   const getLabel = () => {
-    if (score >= 70) return { text: 'Highly Promising', emoji: '🌍', color: 'text-emerald-400' }
-    if (score >= 50) return { text: 'Potentially Habitable', emoji: '🔬', color: 'text-cyan-400' }
-    if (score >= 30) return { text: 'Low Probability', emoji: '🌑', color: 'text-amber-400' }
-    return { text: 'Unlikely Habitable', emoji: '🔴', color: 'text-white/40' }
+    if (score >= 70) return { text: t('detailCard.gauge.highlyPromising'), emoji: '🌍', color: 'text-emerald-400' }
+    if (score >= 50) return { text: t('detailCard.gauge.potentiallyHabitable'), emoji: '🔬', color: 'text-cyan-400' }
+    if (score >= 30) return { text: t('detailCard.gauge.lowProbability'), emoji: '🌑', color: 'text-amber-400' }
+    return { text: t('detailCard.gauge.unlikelyHabitable'), emoji: '🔴', color: 'text-white/40' }
   }
 
   const label = getLabel()
@@ -54,13 +58,13 @@ export function HabitabilityGauge({ score }: { score: number }) {
       {/* Label */}
       <div>
         <div className='text-[10px] font-semibold uppercase tracking-wider text-white/30'>
-          Habitability Score
+          {t('detailCard.habitability')}
         </div>
         <div className={`mt-0.5 text-sm font-bold ${label.color}`}>
           {label.emoji} {label.text}
         </div>
         <p className='mt-1 text-[10px] leading-relaxed text-white/30'>
-          Based on temperature, radius, mass, and stellar type compatibility with Earth-like conditions.
+          {t('detailCard.gauge.desc')}
         </p>
       </div>
     </div>

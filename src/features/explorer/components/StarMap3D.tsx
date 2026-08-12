@@ -13,9 +13,12 @@ import { DetailedPlanetOverlay } from './DetailedPlanetOverlay'
 import { useExplorerStore } from '../stores/explorerStore'
 import { playSound } from '../services/audio'
 import { ambientSynth } from '../services/ambientSynth'
+import { useTranslation } from 'react-i18next'
+import { translateTerm } from '../lib/astronomyDictionary'
 
 /** Tooltip that follows the hovered planet in 3D space */
 function PlanetTooltip() {
+  const { t, i18n } = useTranslation()
   const hoveredPlanetId = useExplorerStore((s) => s.hoveredPlanetId)
   const planets = useExplorerStore((s) => s.planets)
   const groupRef = useRef<THREE.Group>(null)
@@ -54,8 +57,8 @@ function PlanetTooltip() {
       >
         <div className="flex flex-col whitespace-nowrap rounded-lg border border-cyan-500/30 bg-black/80 px-3 py-2 font-mono text-xs text-white shadow-lg backdrop-blur-md">
           <span className="font-bold text-cyan-400">{hoveredPlanet.pl_name}</span>
-          <span className="text-gray-400">Distance: {hoveredPlanet.sy_dist ? `${hoveredPlanet.sy_dist} ly` : 'Unknown'}</span>
-          <span className="text-gray-400">Type: {hoveredPlanet.sizeCategory}</span>
+          <span className="text-gray-400">{t('tooltip.distance')}: {hoveredPlanet.sy_dist ? `${hoveredPlanet.sy_dist} ly` : t('tooltip.unknown')}</span>
+          <span className="text-gray-400">{t('tooltip.type')}: {translateTerm(hoveredPlanet.sizeCategory, i18n.language)}</span>
         </div>
       </Html>
     </group>
@@ -178,6 +181,7 @@ function CameraController() {
 }
 
 export function StarMap3D() {
+  const { t } = useTranslation()
   const selectedPlanet = useExplorerStore((s) => s.selectedPlanet)
   const setSelectedPlanet = useExplorerStore((s) => s.setSelectedPlanet)
 
@@ -267,12 +271,12 @@ export function StarMap3D() {
       {selectedPlanet && (
         <div className='pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-950/70 px-4 py-1.5 font-mono text-[11px] text-cyan-300 backdrop-blur-sm shadow-lg'>
           <span className='h-1.5 w-1.5 animate-ping rounded-full bg-cyan-400' />
-          👁 SPECTATING · {selectedPlanet.pl_name}
+          👁 {t('controls.spectating')} · {selectedPlanet.pl_name}
           <button
             className='pointer-events-auto ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/70 hover:bg-white/20 transition-colors'
             onClick={() => setSelectedPlanet(null)}
           >
-            ✕ Exit [Esc]
+            ✕ {t('controls.exitEsc')}
           </button>
         </div>
       )}
@@ -282,14 +286,14 @@ export function StarMap3D() {
         <div className='flex items-center gap-1.5'>
           <span className='h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400' />
           {selectedPlanet
-            ? '🛸 Spectating — scroll to zoom · drag 360°'
-            : '☀️ Solar System at center · click to spectate'}
+            ? t('controls.spectatingHint')
+            : t('controls.defaultHint')}
         </div>
         <div className='h-3 w-px bg-white/20' />
         <div className='flex items-center gap-2 text-cyan-300/80'>
-          <span><kbd className='rounded bg-white/10 px-1 py-0.5 text-[9px] text-white'>Esc</kbd> Exit</span>
-          <span><kbd className='rounded bg-white/10 px-1 py-0.5 text-[9px] text-white'>Space</kbd> Reset View</span>
-          <span><kbd className='rounded bg-white/10 px-1 py-0.5 text-[9px] text-white'>F</kbd> Focus Hovered</span>
+          <span><kbd className='rounded bg-white/10 px-1 py-0.5 text-[9px] text-white'>Esc</kbd> {t('controls.exit')}</span>
+          <span><kbd className='rounded bg-white/10 px-1 py-0.5 text-[9px] text-white'>Space</kbd> {t('controls.resetView')}</span>
+          <span><kbd className='rounded bg-white/10 px-1 py-0.5 text-[9px] text-white'>F</kbd> {t('controls.focusHovered')}</span>
         </div>
       </div>
     </div>
