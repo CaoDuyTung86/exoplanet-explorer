@@ -22,10 +22,12 @@ interface ExplorerState {
 
   flightTrigger: number
   cameraResetTrigger: number
+  introCompleted: boolean
 
   // Actions
   setShowComparison: (show: boolean) => void
   setShowScientificOverlays: (show: boolean) => void
+  setIntroCompleted: (completed: boolean) => void
   setPlanets: (planets: ProcessedPlanet[]) => void
   setSelectedPlanet: (planet: ProcessedPlanet | null) => void
   setHoveredPlanetId: (id: string | null) => void
@@ -116,6 +118,7 @@ export const useExplorerStore = create<ExplorerState>((set, get) => ({
   showScientificOverlays: false,
   flightTrigger: 0,
   cameraResetTrigger: 0,
+  introCompleted: false,
 
   setPlanets: (planets) => {
     const filtered = applyFilters(planets, get().filters)
@@ -147,5 +150,6 @@ export const useExplorerStore = create<ExplorerState>((set, get) => ({
   setSimulationSpeed: (speed) => set({ simulationSpeed: speed }),
   setShowComparison: (show) => set({ showComparison: show }),
   setShowScientificOverlays: (show) => set({ showScientificOverlays: show }),
+  setIntroCompleted: (completed) => set({ introCompleted: completed }),
   triggerCameraReset: () => set((state) => ({ cameraResetTrigger: state.cameraResetTrigger + 1 })),
 }))

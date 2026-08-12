@@ -1,54 +1,53 @@
-# 🌌 Exoplanet Explorer 3D (Bản đồ Ngoại Hành Tinh)
+# 🌌 Bản Đồ Ngoại Hành Tinh 3D (Exoplanet Explorer)
 
-Một ứng dụng web 3D chân thực, tối ưu hóa cao độ để mô phỏng hơn 5,700 ngoại hành tinh đã được xác nhận, sử dụng dữ liệu thực tế từ Kho lưu trữ Ngoại hành tinh của NASA. Xây dựng bằng React, Three.js và WebGL, dự án này vượt qua mọi giới hạn về kết xuất 3D trên trình duyệt và công nghệ sinh hình học bằng thuật toán (procedural generation).
+Một ứng dụng web 3D thực tế ảo vô cùng sống động, tối ưu hóa cực cao để hiển thị hơn 5.700 ngoại hành tinh đã được xác nhận, sử dụng dữ liệu thực từ NASA Exoplanet Archive. Xây dựng bằng React, Three.js, và WebGL, dự án này vượt qua các giới hạn kết xuất 3D trên trình duyệt.
 
-![Exoplanet Explorer Banner](/public/textures/sun_color.jpg) *(Thay thế bằng ảnh chụp màn hình)*
+![Bản Đồ Ngoại Hành Tinh](/public/textures/sun_color.jpg) *(Thay bằng ảnh chụp màn hình thực tế)*
 
 ## 🚀 Tính Năng Chính
 
-*   **Vũ trụ 3D Tương tác:** Khám phá hơn 5,700 hành tinh được render theo thời gian thực (60-165 FPS). Bay lượn mượt mà giữa các hệ sao bằng thuật toán nội suy (interpolation) camera siêu việt.
-*   **Shader Đồ họa Chuẩn AAA:** Shader WebGL GLSL tự viết dành riêng cho Hành tinh khí (gas giants với mây xoáy), Hành tinh dung nham (lava planets phát sáng nứt nẻ), và Hành tinh đá (địa hình Simplex noise) - tất cả đều được tính toán theo thời gian thực (dynamically) dựa vào dữ liệu của NASA.
-*   **Tổng hợp Âm thanh Môi trường (Synthesizer):** Không dùng file mp3 có sẵn! Âm thanh được tổng hợp (synth) bằng Web Audio API. Cao độ âm thanh (pitch) tỷ lệ nghịch với bán kính hành tinh, bộ lọc cắt tần số (filter cutoff) tỷ lệ thuận với nhiệt độ hành tinh.
-*   **Dữ liệu thực từ NASA & Web Worker:** Tải xuống và xử lý bộ dữ liệu khổng lồ từ NASA TAP API thông qua một Web Worker chạy ngầm, đảm bảo giao diện (UI) không bao giờ bị đứng máy.
-*   **Phân tích Khả năng sống được:** Tính toán Điểm Sống Được (0-100) dựa trên nhiệt độ cân bằng và bán kính hành tinh, đi kèm với vòng sáng Vùng Sống Được (Habitable Zone).
-*   **Đa ngôn ngữ (i18n):** Hỗ trợ Tiếng Anh và Tiếng Việt, kết hợp một thuật toán tự động dịch các thuật ngữ chuyên ngành Thiên văn học vô cùng phức tạp (ví dụ: *Radial Velocity* -> *Vận tốc xuyên tâm*).
-*   **PWA - Cài đặt như một Ứng dụng:** Hỗ trợ cài đặt trên Điện thoại và Máy tính, hoạt động siêu mượt với trải nghiệm như Native App.
+*   **Vũ Trụ 3D Tương Tác:** Khám phá hơn 5.700 hành tinh được render theo thời gian thực (60-165 FPS). Camera nội suy di chuyển mượt mà giữa các hệ sao.
+*   **Shader Đồ Họa Cấp Độ AAA:** Shader WebGL GLSL tùy chỉnh cho Hành tinh khí (những dải mây xoáy), Hành tinh dung nham (vết nứt rực sáng), và Hành tinh đá (địa hình Simplex noise) - tất cả được tính toán động dựa trên thông số của NASA.
+*   **Âm Thanh Tổng Hợp (Ambient Audio):** Tạo âm thanh vũ trụ bằng Web Audio API thuần túy không cần thư viện nặng. Cao độ âm thanh tỷ lệ nghịch với bán kính hành tinh, trong khi độ sáng của âm (filter cutoff) thay đổi theo nhiệt độ của nó.
+*   **Dữ Liệu NASA & Web Worker:** Lấy và xử lý tập dữ liệu khổng lồ từ NASA TAP API thông qua Web Worker chạy ngầm, đảm bảo giao diện không bao giờ bị đơ (UI freezing).
+*   **Đánh Giá Khả Năng Sống (Habitability):** Tự động tính toán Điểm Sống Được (0-100) dựa trên nhiệt độ cân bằng và bán kính hành tinh, kết hợp với hiệu ứng Vành đai sống được (Habitable Zone) phát sáng.
+*   **Đa Ngôn Ngữ (Anh/Việt):** Hỗ trợ Tiếng Anh và Tiếng Việt, với thuật toán tự động dịch các thuật ngữ thiên văn học phức tạp (vd: *Radial Velocity* -> *Vận tốc xuyên tâm*).
 
 ## 🛠️ Công Nghệ Sử Dụng
 
 *   **Frontend Framework:** React 18, TypeScript, Vite
 *   **3D Engine:** Three.js, React Three Fiber (R3F), React Three Drei
-*   **Giao diện:** Tailwind CSS, Lucide React (Biểu tượng)
-*   **Quản lý Trạng thái:** Zustand
-*   **Âm thanh:** Howler.js & Native Web Audio API (BiquadFilters, Oscillators)
-*   **Nguồn dữ liệu:** NASA Exoplanet Archive (TAP API)
+*   **Styling:** Tailwind CSS, Lucide React (Icons)
+*   **State Management:** Zustand
+*   **Audio:** Howler.js & Native Web Audio API (BiquadFilters, Oscillators)
+*   **Data Source:** NASA Exoplanet Archive (TAP API)
 
-## 💻 Hướng Dẫn Chạy Cục Bộ (Local)
+## 💻 Chạy Ứng Dụng (Local)
 
-1.  Clone repo về máy:
+1.  Clone kho lưu trữ:
     ```bash
     git clone https://github.com/yourusername/exoplanet-explorer.git
     cd exoplanet-explorer
     ```
-2.  Cài đặt các gói phụ thuộc (dependencies):
+2.  Cài đặt các gói phụ thuộc:
     ```bash
     pnpm install
     ```
-3.  Chạy server phát triển (dev server):
+3.  Khởi động server phát triển:
     ```bash
     pnpm run dev
     ```
 
 ## 🧠 Điểm Nhấn Kỹ Thuật
 
-### Tối ưu hóa InstancedMesh
-Để có thể render 5,700 hình cầu mà không làm cháy GPU, dự án tận dụng `THREE.InstancedMesh`. Việc này cho phép vẽ toàn bộ các hành tinh chỉ bằng **MỘT LẦN GỌI VẼ (Single Draw Call)**. Vùng va chạm (hit-box để dùng chuột bấm) sẽ tự động thu nhỏ lại khi bạn đang xem gần một hành tinh để tránh bấm nhầm, đồng thời vẫn giữ được khả năng bấm trúng dễ dàng khi nhìn từ xa.
+### Tối Ưu Hóa InstancedMesh
+Để hiển thị 5.700 khối cầu mà không làm treo GPU, dự án sử dụng `THREE.InstancedMesh`, cho phép vẽ toàn bộ hành tinh chỉ với 1 "draw call". Khu vực bấm chuột (hit-box) tự động thu nhỏ khi người dùng đang zoom sát một hành tinh để tránh bấm nhầm, đồng thời vẫn dễ dàng chọn khi ở xa.
 
-### Tinh chỉnh Shader (`onBeforeCompile`)
-Thay vì phải tải hàng ngàn file ảnh Texture nặng nề, ứng dụng này bơm thẳng các thuật toán nhiễu (Simplex 3D Noise) vào trong bộ Shader `MeshStandardMaterial`. Nhờ vậy, ánh sáng, đổ bóng, các hiệu ứng thị giác rực rỡ đều được tính toán bằng Toán học trực tiếp trên Card Đồ Họa (GPU). Kết quả: Dung lượng tải (bundle size) siêu nhẹ và hiệu năng đồ họa khủng khiếp.
+### Shader Sinh Tự Động (`onBeforeCompile`)
+Thay vì tải hàng nghìn ảnh texture nặng nề, ứng dụng chèn thẳng các thuật toán nhiễu hạt (Simplex 3D noise) vào mã nguồn shader của `MeshStandardMaterial`. Mọi hiệu ứng đổ bóng, phát sáng được tính toán toán học trực tiếp trên GPU, giúp file tải về siêu nhỏ gọn và hiệu suất cực cao.
 
-### Sửa lỗi Race-Condition của React StrictMode
-Đã triển khai cơ chế Promise Caching toàn cục để ngăn chặn việc tải đôi (double-fetching) API của NASA khi React 18 Strict Mode chạy chu kỳ mount, giúp tiết kiệm băng thông và ngăn chặn lỗi quá tải API.
+### Xử Lý Lỗi Race-Condition của React StrictMode
+Đã triển khai cơ chế "Global Promise Caching" để chặn việc tải dữ liệu từ API của NASA tới 2 lần liên tiếp do chu kỳ mount của React 18 Strict Mode, tiết kiệm băng thông và ngăn ngừa việc bị chặn API (rate-limiting).
 
 ---
-*Dự án được tạo ra bằng tất cả niềm đam mê, kết hợp giữa Thiên văn học, Trực quan hóa dữ liệu và Đồ họa web đỉnh cao.*
+*Dự án tâm huyết kết hợp giữa thiên văn học, trực quan hóa dữ liệu và đồ họa web 3D nâng cao.*

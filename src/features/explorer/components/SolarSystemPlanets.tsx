@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { useExplorerStore } from '../stores/explorerStore'
 import { currentPlanetPositions } from './PlanetCloud'
 import { playSound } from '../services/audio'
+import { AtmosphereGlow } from './AtmosphereGlow'
 
 const solarConfigs = [
   {
@@ -12,12 +13,16 @@ const solarConfigs = [
     r: 3.5,
     speed: 0.8,
     texture: '/textures/mercury_color.jpg',
+    atmosphere: '#a0a0a0',
+    atmosphereIntensity: 0.2,
   },
   {
     id: 'sol-venus',
     r: 5.0,
     speed: 0.55,
     texture: '/textures/venus_color.jpg',
+    atmosphere: '#ffcc66',
+    atmosphereIntensity: 0.6,
   },
   {
     id: 'sol-earth',
@@ -26,13 +31,17 @@ const solarConfigs = [
     texture: '/textures/earth_color.jpg',
     clouds: '/textures/earth_clouds.jpg',
     specular: '/textures/earth_specular.jpg',
+    atmosphere: '#4da6ff',
+    atmosphereIntensity: 0.8,
   },
-  { id: 'sol-mars', r: 9.0, speed: 0.28, texture: '/textures/mars_color.jpg' },
+  { id: 'sol-mars', r: 9.0, speed: 0.28, texture: '/textures/mars_color.jpg', atmosphere: '#ff6633', atmosphereIntensity: 0.35 },
   {
     id: 'sol-jupiter',
     r: 14.0,
     speed: 0.15,
     texture: '/textures/jupiter_color.jpg',
+    atmosphere: '#ffaa44',
+    atmosphereIntensity: 0.5,
   },
   {
     id: 'sol-saturn',
@@ -40,18 +49,24 @@ const solarConfigs = [
     speed: 0.08,
     texture: '/textures/saturn_color.jpg',
     ring: '/textures/saturn_ring.png',
+    atmosphere: '#ffe088',
+    atmosphereIntensity: 0.4,
   },
   {
     id: 'sol-uranus',
     r: 24.0,
     speed: 0.05,
     texture: '/textures/uranus_color.jpg',
+    atmosphere: '#66ddcc',
+    atmosphereIntensity: 0.6,
   },
   {
     id: 'sol-neptune',
     r: 29.0,
     speed: 0.03,
     texture: '/textures/neptune_color.jpg',
+    atmosphere: '#3388ff',
+    atmosphereIntensity: 0.7,
   },
 ]
 
@@ -156,6 +171,15 @@ export function SolarSystemPlanets() {
             {/* Saturn Ring Layer (P2.2) */}
             {cfg.ring && (
               <SaturnRing radius={radius} texture={textures[cfg.id + '_ring']} />
+            )}
+
+            {/* Atmospheric Glow (Phase 9.2) */}
+            {cfg.atmosphere && (
+              <AtmosphereGlow
+                radius={radius}
+                color={cfg.atmosphere}
+                intensity={cfg.atmosphereIntensity ?? 0.5}
+              />
             )}
           </group>
         )

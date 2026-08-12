@@ -139,6 +139,9 @@ export function SunEffects() {
         />
       </sprite>
 
+      {/* 🔆 Lens Flare Effect (Phase 9.4) */}
+      <SunLensFlare />
+
       {/* ⭕ Orbital Path Rings for Solar System Planets */}
       {orbitRadii.map((orbit) => (
         <OrbitRing key={orbit.name} radius={orbit.radius} color={orbit.color} />
@@ -165,5 +168,82 @@ function OrbitRing({ radius, color }: { radius: number; color: string }) {
       transparent
       opacity={0.15}
     />
+  )
+}
+
+/**
+ * SunLensFlare — Procedural lens flare sprites that appear when looking toward the Sun.
+ * Uses dot product between camera direction and sun position to control visibility.
+ * Multiple colored rings at different offsets create a realistic lens flare look.
+ */
+function SunLensFlare() {
+  const groupRef = useRef<THREE.Group>(null)
+
+  // Create a hex flare texture
+  const flareTexture = useMemo(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const ctx = canvas.getContext('2d')!
+    const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32)
+    g.addColorStop(0, 'rgba(255, 255, 255, 0.6)')
+    g.addColorStop(0.3, 'rgba(180, 220, 255, 0.3)')
+    g.addColorStop(0.6, 'rgba(100, 150, 255, 0.1)')
+    g.addColorStop(1, 'rgba(0, 0, 0, 0)')
+    ctx.fillStyle = g
+    ctx.fillRect(0, 0, 64, 64)
+    return new THREE.CanvasTexture(canvas)
+  }, [])
+
+  // Flare elements: offset along camera-to-sun axis, size, color, opacity
+  const flareElements = useMemo(() => [
+    { offset: 0.3, size: 1.5, color: '#ffddaa', opacity: 0.3 },
+    { offset: 0.6, size: 0.8, color: '#aaddff', opacity: 0.2 },
+    { offset: 0.9, size: 2.0, color: '#ffcc66', opacity: 0.15 },
+    { offset: 1.3, size: 1.0, color: '#88aaff', opacity: 0.2 },
+    { offset: 1.7, size: 3.0, color: '#ff8844', opacity: 0.1 },
+  ], [])
+
+  useFrame(({ camera }) => {
+    if (!groupRef.current) return
+    
+    // Calculate dot product of camera forward direction and direction to sun
+    const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
+    const sunDir = new THREE.Vector3().copy(camera.position).negate().normalize()
+    const dot = camDir.dot(sunDir)
+    
+    // Only show flares when looking somewhat toward the sun
+    const visibility = Math.max(0, (dot - 0.3) / 0.7) // 0 at dot=0.3, 1 at dot=1.0
+    
+    groupRef.current.children.forEach((child, i) => {
+      const sprite = child as THREE.Sprite
+      const element = flareElements[i]
+      if (sprite && element) {
+        // Position along camera-to-sun line
+        const pos = camera.position.clone().add(
+          sunDir.clone().multiplyScalar(element.offset * 20)
+        )
+        sprite.position.copy(pos)
+        sprite.material.opacity = element.opacity * visibility * visibility
+      }
+    })
+  })
+
+  return (
+    <group ref={groupRef}>
+      {flareElements.map((el, i) => (
+        <sprite key={i}>
+          <spriteMaterial
+            map={flareTexture}
+            color={el.color}
+            transparent
+            opacity={0}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            depthTest={false}
+          />
+        </sprite>
+      ))}
+    </group>
   )
 }

@@ -86,6 +86,15 @@ class AmbientSynth {
     this.isPlaying = true
     this.mainGain.gain.cancelScheduledValues(now)
     this.mainGain.gain.setTargetAtTime(0.15, now, 1.5) // Volume 0.15
+
+    // Phase 9.7: Heartbeat for habitable planets — "life detected" feel
+    this.stopHeartbeat()
+    if (planet.isHabitable) {
+      this.startHeartbeat()
+    }
+
+    // Phase 9.7: Duck BGM volume when spectating
+    this.duckBGM(true)
   }
 
   public stop() {
@@ -94,6 +103,8 @@ class AmbientSynth {
     this.mainGain.gain.cancelScheduledValues(now)
     this.mainGain.gain.setTargetAtTime(0.0, now, 1.0)
     this.isPlaying = false
+    this.stopHeartbeat()
+    this.duckBGM(false) // Restore BGM volume
   }
 
   public mute(isMuted: boolean) {
@@ -102,9 +113,72 @@ class AmbientSynth {
     if (isMuted) {
       this.mainGain.gain.cancelScheduledValues(now)
       this.mainGain.gain.setTargetAtTime(0, now, 0.5)
+      this.stopHeartbeat()
     } else if (this.isPlaying) {
       this.mainGain.gain.cancelScheduledValues(now)
       this.mainGain.gain.setTargetAtTime(0.15, now, 0.5)
+    }
+  }
+
+  // --- Phase 9.7: Heartbeat for habitable planets ---
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null
+
+  private startHeartbeat() {
+    if (!this.ctx || !this.mainGain) return
+
+    // Double-beat pattern: thump-thump ... thump-thump
+    const playBeat = () => {
+      if (!this.ctx || !this.mainGain || isAudioMuted()) return
+      const now = this.ctx.currentTime
+
+      // First beat
+      const osc = this.ctx.createOscillator()
+      osc.type = 'sine'
+      osc.frequency.value = 45
+
+      const gain = this.ctx.createGain()
+      gain.gain.setValueAtTime(0, now)
+      gain.gain.linearRampToValueAtTime(0.08, now + 0.05)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2)
+
+      osc.connect(gain)
+      gain.connect(this.mainGain!)
+      osc.start(now)
+      osc.stop(now + 0.25)
+
+      // Second beat (slightly quieter, slightly delayed)
+      const osc2 = this.ctx.createOscillator()
+      osc2.type = 'sine'
+      osc2.frequency.value = 40
+
+      const gain2 = this.ctx.createGain()
+      gain2.gain.setValueAtTime(0, now + 0.25)
+      gain2.gain.linearRampToValueAtTime(0.05, now + 0.3)
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.45)
+
+      osc2.connect(gain2)
+      gain2.connect(this.mainGain!)
+      osc2.start(now + 0.25)
+      osc2.stop(now + 0.5)
+    }
+
+    playBeat()
+    this.heartbeatInterval = setInterval(playBeat, 1200) // ~50 BPM
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval)
+      this.heartbeatInterval = null
+    }
+  }
+
+  // --- Phase 9.7: Dynamic BGM volume ducking ---
+  private duckBGM(duck: boolean) {
+    // Import dynamically to avoid circular dependency
+    const { SOUNDS } = require('./audio')
+    if (SOUNDS?.bgm) {
+      SOUNDS.bgm.volume(duck ? 0.03 : 0.1)
     }
   }
 }

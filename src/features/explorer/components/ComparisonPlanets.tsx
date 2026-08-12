@@ -4,8 +4,10 @@ import type * as THREE from 'three'
 import { useExplorerStore } from '../stores/explorerStore'
 import { getPlanetWorldPosition } from './PlanetCloud'
 import { Html } from '@react-three/drei'
+import { useTranslation } from 'react-i18next'
 
 export function ComparisonPlanets() {
+  const { i18n } = useTranslation()
   const selectedPlanet = useExplorerStore((s) => s.selectedPlanet)
   const showComparison = useExplorerStore((s) => s.showComparison)
   const groupRef = useRef<THREE.Group>(null)
@@ -48,7 +50,7 @@ export function ComparisonPlanets() {
         </mesh>
         <Html position={[0, -earthRadius - 0.3, 0]} center zIndexRange={[10, 0]} className="pointer-events-none">
           <div className="text-[10px] font-mono font-bold text-blue-400 bg-black/60 px-1.5 py-0.5 rounded border border-blue-500/30 backdrop-blur-sm whitespace-nowrap">
-            Earth (1 R⊕)
+            {i18n.language.startsWith('vi') ? 'Trái Đất' : 'Earth'} (1 R⊕)
           </div>
         </Html>
       </group>
@@ -61,7 +63,7 @@ export function ComparisonPlanets() {
         </mesh>
         <Html position={[0, -jupiterRadius - 0.3, 0]} center zIndexRange={[10, 0]} className="pointer-events-none">
           <div className="text-[10px] font-mono font-bold text-orange-400 bg-black/60 px-1.5 py-0.5 rounded border border-orange-500/30 backdrop-blur-sm whitespace-nowrap">
-            Jupiter (11.2 R⊕)
+            {i18n.language.startsWith('vi') ? 'Sao Mộc' : 'Jupiter'} (11.2 R⊕)
           </div>
         </Html>
       </group>

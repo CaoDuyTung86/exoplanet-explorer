@@ -8,6 +8,7 @@ import { PlanetDetailCard } from './components/PlanetDetailCard'
 import { FilterSidebar } from './components/FilterSidebar'
 import { DataTable } from './components/DataTable'
 import { LanguageToggle } from './components/LanguageToggle'
+import { StatsPanel } from './components/StatsPanel'
 import { useTranslation } from 'react-i18next'
 
 export function ExplorerPage() {
@@ -200,26 +201,7 @@ export function ExplorerPage() {
             <>
               <StarMap3D />
               <PlanetDetailCard />
-              {/* Stats overlay */}
-              <div className='pointer-events-none absolute left-4 top-4 z-20 space-y-2'>
-                <div className='rounded-xl border border-white/10 bg-slate-950/80 p-3 backdrop-blur-md'>
-                  <div className='text-[10px] font-semibold uppercase tracking-wider text-white/30'>
-                    {t('stats.visibleExoplanets')}
-                  </div>
-                  <div className='mt-0.5 text-2xl font-black text-white'>
-                    {filteredPlanets.length.toLocaleString()}
-                  </div>
-                </div>
-
-                <div className='rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 backdrop-blur-md'>
-                  <div className='text-[10px] font-semibold uppercase tracking-wider text-emerald-400/50'>
-                    {t('stats.habitableCandidates')}
-                  </div>
-                  <div className='mt-0.5 text-2xl font-black text-emerald-400'>
-                    {filteredPlanets.filter((p) => p.isHabitable).length}
-                  </div>
-                </div>
-              </div>
+              <StatsPanel />
 
               {/* Reset View Button */}
               {!selectedPlanet && (

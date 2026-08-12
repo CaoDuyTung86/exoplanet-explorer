@@ -10,6 +10,10 @@ import { ComparisonPlanets } from './ComparisonPlanets'
 import { HabitableZoneRing } from './HabitableZoneRing'
 import { ScientificOverlays } from './ScientificOverlays'
 import { DetailedPlanetOverlay } from './DetailedPlanetOverlay'
+import { Effects } from './Effects'
+import { IntroSequence } from './IntroSequence'
+import { NebulaField } from './NebulaField'
+import { CursorTrail } from './CursorTrail'
 import { useExplorerStore } from '../stores/explorerStore'
 import { playSound } from '../services/audio'
 import { ambientSynth } from '../services/ambientSynth'
@@ -238,6 +242,9 @@ export function StarMap3D() {
           {/* Sun Effects (Core glow, Corona, Solar flares, Orbit Rings) */}
           <SunEffects />
 
+          {/* Background nebulae (Phase 9.5) */}
+          <NebulaField />
+
           {/* Background stars */}
           <Starfield />
           <SolarSystemPlanets />
@@ -251,6 +258,15 @@ export function StarMap3D() {
 
           {/* Phase 7: Custom Surface Shaders (Spectator Overlay) */}
           <DetailedPlanetOverlay />
+
+          {/* Phase 9: Cinematic Intro (warp speed fly-in) */}
+          <IntroSequence />
+
+          {/* Phase 9: Cursor particle trail */}
+          <CursorTrail />
+
+          {/* Phase 9: Post-processing (Bloom + Vignette + Chromatic Aberration) */}
+          <Effects />
 
           {/* Camera controls — always enabled, CameraController moves it programmatically when spectating */}
           <OrbitControls
