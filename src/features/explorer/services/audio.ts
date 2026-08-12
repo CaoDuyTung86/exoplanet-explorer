@@ -32,6 +32,12 @@ export function pauseBgm() {
   SOUNDS.bgm.pause()
 }
 
+export function setBgmVolume(volume: number) {
+  if (SOUNDS.bgm) {
+    SOUNDS.bgm.volume(volume)
+  }
+}
+
 export function toggleAudioMute(mute?: boolean) {
   globalMuted = mute ?? !globalMuted
   Howler.mute(globalMuted)

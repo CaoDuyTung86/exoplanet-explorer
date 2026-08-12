@@ -1,5 +1,5 @@
 import { Howler } from 'howler'
-import { isAudioMuted } from './audio'
+import { isAudioMuted, setBgmVolume } from './audio'
 import type { ProcessedPlanet } from '../types'
 
 class AmbientSynth {
@@ -175,11 +175,7 @@ class AmbientSynth {
 
   // --- Phase 9.7: Dynamic BGM volume ducking ---
   private duckBGM(duck: boolean) {
-    // Import dynamically to avoid circular dependency
-    const { SOUNDS } = require('./audio')
-    if (SOUNDS?.bgm) {
-      SOUNDS.bgm.volume(duck ? 0.03 : 0.1)
-    }
+    setBgmVolume(duck ? 0.03 : 0.1)
   }
 }
 

@@ -18,36 +18,39 @@ const START_POS = new THREE.Vector3(0, 80, 600)
 const END_POS = new THREE.Vector3(0, 45, 110)
 const TARGET_POS = new THREE.Vector3(0, 0, 0)
 
+function generateIntroParticles() {
+  const count = 600
+  const pos = new Float32Array(count * 3)
+  const vel = new Float32Array(count * 3)
+
+  for (let i = 0; i < count; i++) {
+    // Distribute in a cylinder around the camera path
+    const angle = Math.random() * Math.PI * 2
+    const r = 5 + Math.random() * 60
+    pos[i * 3] = Math.cos(angle) * r
+    pos[i * 3 + 1] = Math.sin(angle) * r
+    pos[i * 3 + 2] = Math.random() * 500 - 100
+
+    // Velocity: mostly backwards (negative Z)
+    vel[i * 3] = (Math.random() - 0.5) * 0.5
+    vel[i * 3 + 1] = (Math.random() - 0.5) * 0.5
+    vel[i * 3 + 2] = -(20 + Math.random() * 40)
+  }
+  return [pos, vel] as const
+}
+
 export function IntroSequence() {
   const { camera, controls } = useThree()
   const introCompleted = useExplorerStore((s) => s.introCompleted)
   const setIntroCompleted = useExplorerStore((s) => s.setIntroCompleted)
+  const isLoading = useExplorerStore((s) => s.isLoading)
   
   const progressRef = useRef(0)
   const linesRef = useRef<THREE.Points>(null)
   const initialized = useRef(false)
 
   // Speed lines — stretched particles that fly past the camera
-  const [positions, velocities] = useMemo(() => {
-    const count = 600
-    const pos = new Float32Array(count * 3)
-    const vel = new Float32Array(count * 3)
-
-    for (let i = 0; i < count; i++) {
-      // Distribute in a cylinder around the camera path
-      const angle = Math.random() * Math.PI * 2
-      const r = 5 + Math.random() * 60
-      pos[i * 3] = Math.cos(angle) * r
-      pos[i * 3 + 1] = Math.sin(angle) * r
-      pos[i * 3 + 2] = Math.random() * 500 - 100
-
-      // Velocity: mostly backwards (negative Z)
-      vel[i * 3] = (Math.random() - 0.5) * 0.5
-      vel[i * 3 + 1] = (Math.random() - 0.5) * 0.5
-      vel[i * 3 + 2] = -(20 + Math.random() * 40)
-    }
-    return [pos, vel]
-  }, [])
+  const [positions, velocities] = useMemo(() => generateIntroParticles(), [])
 
   // Initialize camera position on first frame
   useFrame((_, delta) => {
@@ -58,6 +61,9 @@ export function IntroSequence() {
       camera.lookAt(TARGET_POS)
       initialized.current = true
     }
+
+    // Wait for the main loading overlay to finish before starting the animation
+    if (isLoading) return
 
     progressRef.current += delta
 

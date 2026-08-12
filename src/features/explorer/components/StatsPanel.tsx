@@ -82,30 +82,29 @@ function DonutChart({ segments }: { segments: { label: string; value: number; co
   
   const radius = 30
   const circumference = 2 * Math.PI * radius
-  let offset = 0
+  const preparedSegments = segments.map((seg, i) => {
+    const pct = seg.value / total
+    const dashLength = pct * circumference
+    const offsetBefore = segments.slice(0, i).reduce((sum, s) => sum + s.value / total, 0)
+    const dashOffset = -offsetBefore * circumference
+    return { ...seg, dashLength, dashOffset }
+  })
 
   return (
     <div className="flex items-center gap-3">
       <svg viewBox="0 0 80 80" className="h-16 w-16 flex-shrink-0">
-        {segments.map((seg, i) => {
-          const pct = seg.value / total
-          const dashLength = pct * circumference
-          const dashOffset = -offset * circumference
-          offset += pct
-          
-          return (
-            <circle
-              key={i}
-              cx="40" cy="40" r={radius}
-              fill="none"
-              stroke={seg.color}
-              strokeWidth="8"
-              strokeDasharray={`${dashLength} ${circumference - dashLength}`}
-              strokeDashoffset={dashOffset}
-              className="transition-all duration-700"
-            />
-          )
-        })}
+        {preparedSegments.map((seg, i) => (
+          <circle
+            key={i}
+            cx="40" cy="40" r={radius}
+            fill="none"
+            stroke={seg.color}
+            strokeWidth="8"
+            strokeDasharray={`${seg.dashLength} ${circumference - seg.dashLength}`}
+            strokeDashoffset={seg.dashOffset}
+            className="transition-all duration-700"
+          />
+        ))}
       </svg>
       <div className="flex flex-col gap-0.5 text-[9px]">
         {segments.filter(s => s.value > 0).slice(0, 5).map((seg, i) => (
@@ -124,11 +123,8 @@ export function StatsPanel() {
   const { t, i18n } = useTranslation()
   const filteredPlanets = useExplorerStore((s) => s.filteredPlanets)
   const selectedPlanet = useExplorerStore((s) => s.selectedPlanet)
-  
-  // Don't show stats panel when spectating a planet
-  if (selectedPlanet) return null
 
-  // Animated counts
+  // Animated counts - MUST be called unconditionally before any early returns!
   const totalCount = useCountUp(filteredPlanets.length)
   const habitableCount = useCountUp(filteredPlanets.filter(p => p.isHabitable).length)
 
@@ -187,6 +183,9 @@ export function StatsPanel() {
       .filter(p => p.isHabitable && !p.id.startsWith('sol-') && p.distanceLy > 0)
       .sort((a, b) => a.distanceLy - b.distanceLy)[0] || null
   }, [filteredPlanets])
+
+  // Don't show stats panel when spectating a planet
+  if (selectedPlanet) return null
 
   return (
     <div className="pointer-events-none absolute left-4 top-4 z-20 space-y-2 w-64">

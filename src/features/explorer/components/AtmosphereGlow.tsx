@@ -46,9 +46,9 @@ interface AtmosphereGlowProps {
 export function AtmosphereGlow({
   radius,
   color = '#4da6ff',
-  intensity = 0.7,
-  power = 3.0,
-  scale = 1.18,
+  intensity = 0.6,
+  power = 4.5,
+  scale = 1.08,
 }: AtmosphereGlowProps) {
   const uniforms = useMemo(
     () => ({
