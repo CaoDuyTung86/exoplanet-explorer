@@ -7,6 +7,7 @@ import { StarMap3D } from './components/StarMap3D'
 import { PlanetDetailCard } from './components/PlanetDetailCard'
 import { FilterSidebar } from './components/FilterSidebar'
 import { DataTable } from './components/DataTable'
+import { ThemeToggle } from './components/ThemeToggle'
 import { LanguageToggle } from './components/LanguageToggle'
 import { StatsPanel } from './components/StatsPanel'
 import { useTranslation } from 'react-i18next'
@@ -84,13 +85,18 @@ export function ExplorerPage() {
   }, [])
 
   return (
-    <div className='flex h-screen flex-col bg-slate-950 text-white overflow-hidden'>
+    <div className='flex h-screen flex-col bg-slate-950 text-white overflow-hidden dark:bg-slate-950 dark:text-white bg-slate-50 text-slate-900 transition-colors duration-300'>
       {/* Top Navigation Bar */}
-      <header className='flex h-12 shrink-0 items-center justify-between border-b border-white/5 bg-slate-950/95 px-4 backdrop-blur-md z-30'>
+      <header className='flex h-12 shrink-0 items-center justify-between border-b border-white/5 dark:border-white/5 border-slate-300 bg-slate-950/95 dark:bg-slate-950/95 bg-white/95 px-4 backdrop-blur-md z-30 transition-colors duration-300'>
         <div className='flex items-center gap-3'>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className='rounded-lg p-1.5 text-white/40 transition-colors hover:bg-white/5 hover:text-white'
+            className={`rounded-lg p-1.5 transition-all ${
+              sidebarOpen
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
+                : 'text-slate-400 dark:text-white/40 hover:bg-black/5 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'
+            }`}
+            title={sidebarOpen ? 'Close Filter Sidebar' : 'Open Filter Sidebar'}
           >
             <PanelLeft className='h-4 w-4' />
           </button>
@@ -107,13 +113,13 @@ export function ExplorerPage() {
 
         <div className='flex items-center gap-3'>
           {/* View mode toggle */}
-          <div className='flex h-8 items-center rounded-lg border border-cyan-500/20 bg-slate-900/60 p-1 backdrop-blur-md'>
+          <div className='flex h-8 items-center rounded-lg border border-cyan-500/20 bg-slate-100 dark:bg-slate-900/60 p-1 backdrop-blur-md transition-colors duration-300'>
             <button
               onClick={() => setViewMode('3d')}
               className={`flex h-6 items-center gap-1.5 rounded-md px-3 text-xs font-medium transition-all ${
                 viewMode === '3d'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  ? 'bg-cyan-500/20 text-cyan-500 dark:text-cyan-300 border border-cyan-400/40 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/5'
               }`}
             >
               <Box className='h-3.5 w-3.5' /> {t('sidebar.viewMode.3d')}
@@ -122,8 +128,8 @@ export function ExplorerPage() {
               onClick={() => setViewMode('table')}
               className={`flex h-6 items-center gap-1.5 rounded-md px-3 text-xs font-medium transition-all ${
                 viewMode === 'table'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  ? 'bg-cyan-500/20 text-cyan-500 dark:text-cyan-300 border border-cyan-400/40 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/5'
               }`}
             >
               <Table2 className='h-3.5 w-3.5' /> {t('sidebar.viewMode.table')}
@@ -131,22 +137,23 @@ export function ExplorerPage() {
           </div>
 
           {/* Planet count */}
-          <div className='hidden h-8 items-center gap-2 rounded-lg border border-cyan-500/20 bg-slate-900/60 px-3 font-mono text-xs text-slate-300 backdrop-blur-md sm:flex'>
+          <div className='hidden h-8 items-center gap-2 rounded-lg border border-cyan-500/20 bg-slate-100 dark:bg-slate-900/60 px-3 font-mono text-xs text-slate-600 dark:text-slate-300 backdrop-blur-md sm:flex transition-colors duration-300'>
             <span className='h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' />
             <span>{filteredPlanets.length.toLocaleString()} {i18n.language.startsWith('vi') ? 'hành tinh' : 'planets loaded'}</span>
           </div>
 
+          <ThemeToggle />
           <LanguageToggle />
 
           {/* Audio Mute toggle */}
           <button
             onClick={() => setIsMuted(toggleAudioMute())}
-            className={`flex h-8 w-8 items-center justify-center rounded-lg border backdrop-blur-md transition-all ${
+            className={`flex h-8 w-8 items-center justify-center rounded-lg border backdrop-blur-md transition-all duration-300 ${
               isMuted
-                ? 'border-red-500/20 bg-red-900/40 text-red-400 hover:bg-red-900/60'
-                : 'border-cyan-500/20 bg-slate-900/60 text-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.2)] hover:bg-slate-800/80'
+                ? 'border-slate-500/20 bg-slate-100 dark:bg-slate-900/60 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5'
+                : 'border-cyan-500/20 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)] hover:bg-cyan-100 dark:hover:bg-cyan-800/30'
             }`}
-            title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
+            title={isMuted ? 'Unmute BGM' : 'Mute BGM'}
           >
             {isMuted ? <VolumeX className='h-4 w-4' /> : <Volume2 className='h-4 w-4' />}
           </button>
@@ -178,7 +185,7 @@ export function ExplorerPage() {
       <div className="flex flex-1 overflow-hidden relative">
         {/* Sidebar */}
         <div
-          className={`absolute inset-y-0 left-0 z-40 h-full transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+          className={`absolute inset-y-0 left-0 z-40 h-full transition-transform duration-300 ease-in-out ${
             sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
           }`}
         >

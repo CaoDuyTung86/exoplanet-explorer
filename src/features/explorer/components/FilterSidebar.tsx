@@ -17,31 +17,32 @@ export function FilterSidebar() {
   const setSimulationSpeed = useExplorerStore((s) => s.setSimulationSpeed)
 
   return (
-    <div className='flex h-full w-full flex-col border-r border-white/5 bg-slate-950/80 backdrop-blur-lg'>
+    <div className='flex h-full w-full flex-col border-r border-slate-200 dark:border-white/5 bg-white/90 dark:bg-slate-950/80 backdrop-blur-lg'>
       {/* Header */}
-      <div className='border-b border-white/5 p-4'>
+      <div className='border-b border-slate-200 dark:border-white/5 p-4'>
         <div className='flex items-center justify-between'>
-          <h3 className='flex items-center gap-2 text-sm font-bold text-white'>
+          <h3 className='flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white'>
             <Filter className='h-4 w-4 text-primary' />
             {t('sidebar.title')}
           </h3>
           <div className="flex items-center gap-2">
             <button
               onClick={resetFilters}
-              className='flex items-center gap-1 rounded px-2 py-1 text-[10px] text-white/40 transition-colors hover:bg-white/5 hover:text-white/70'
+              className='flex items-center gap-1 rounded px-2 py-1 text-[10px] text-slate-500 dark:text-slate-400 dark:text-white/40 transition-colors hover:bg-slate-100 dark:bg-white/5 hover:text-slate-700 dark:text-white/70'
             >
               <RotateCcw className='h-3 w-3' /> {t('sidebar.reset')}
             </button>
-            {/* Mobile close button (visible only on small screens) */}
+            {/* Close button */}
             <button
               onClick={() => useExplorerStore.getState().setSidebarOpen(false)}
-              className="md:hidden flex items-center justify-center rounded-full p-1 text-white/50 hover:bg-white/10"
+              className="flex items-center justify-center rounded-full p-1 text-slate-600 dark:text-white/50 hover:bg-slate-200 dark:bg-white/10 hover:text-slate-900 dark:text-white transition-colors"
+              title="Close Sidebar"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
         </div>
-        <div className='mt-2 text-[11px] text-white/30'>
+        <div className='mt-2 text-[11px] text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-white/30'>
           {t('sidebar.showing')} <strong className='text-primary'>{filteredPlanets.length.toLocaleString()}</strong> {t('sidebar.of')} {planets.length.toLocaleString()} {t('sidebar.planets')}
         </div>
       </div>
@@ -49,7 +50,7 @@ export function FilterSidebar() {
       <div className='flex-1 overflow-y-auto p-4 space-y-5'>
         {/* Search */}
         <div>
-          <label className='mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-white/30'>
+          <label className='mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-white/30'>
             {t('sidebar.searchLabel')}
           </label>
           <div className='relative'>
@@ -65,7 +66,7 @@ export function FilterSidebar() {
                 }
               }}
               placeholder={t('sidebar.searchPlaceholder')}
-              className='w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-8 pr-3 text-xs text-white placeholder:text-white/20 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30'
+              className='w-full rounded-lg border border-slate-300 dark:border-white/10 bg-slate-100 dark:bg-white/5 py-2 pl-8 pr-3 text-xs text-slate-900 dark:text-white placeholder:text-white/20 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30'
             />
           </div>
         </div>
@@ -79,7 +80,7 @@ export function FilterSidebar() {
           <button
             onClick={() => setFilters({ showHabitableOnly: !filters.showHabitableOnly })}
             className={`relative flex h-5 w-9 items-center rounded-full p-0.5 transition-colors ${
-              filters.showHabitableOnly ? 'bg-emerald-500' : 'bg-white/10'
+              filters.showHabitableOnly ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-white/10'
             }`}
           >
             <span
@@ -99,7 +100,7 @@ export function FilterSidebar() {
           <button
             onClick={() => useExplorerStore.getState().setShowScientificOverlays(!useExplorerStore.getState().showScientificOverlays)}
             className={`relative flex h-5 w-9 items-center rounded-full p-0.5 transition-colors ${
-              useExplorerStore((s) => s.showScientificOverlays) ? 'bg-purple-500' : 'bg-white/10'
+              useExplorerStore((s) => s.showScientificOverlays) ? 'bg-purple-500' : 'bg-slate-200 dark:bg-white/10'
             }`}
           >
             <span
@@ -113,7 +114,7 @@ export function FilterSidebar() {
         {/* Simulation Speed */}
         <div>
           <div className='mb-1.5 flex items-center justify-between'>
-            <label className='text-[10px] font-semibold uppercase tracking-wider text-white/30'>
+            <label className='text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-white/30'>
               {t('sidebar.simulationSpeed')}
             </label>
             <span className='font-mono text-[10px] font-bold text-primary'>
@@ -169,7 +170,7 @@ export function FilterSidebar() {
 
         {/* Discovery Method */}
         <div>
-          <label className='mb-2 block text-[10px] font-semibold uppercase tracking-wider text-white/30'>
+          <label className='mb-2 block text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-white/30'>
             {t('sidebar.discoveryMethod')}
           </label>
           <div className='flex flex-wrap gap-1.5'>
@@ -187,7 +188,7 @@ export function FilterSidebar() {
                   className={`rounded-md border px-2 py-1 text-[10px] font-medium transition-all ${
                     isActive
                       ? 'border-primary/50 bg-primary/20 text-primary'
-                      : 'border-white/10 bg-white/5 text-white/40 hover:border-white/20 hover:text-white/60'
+                      : 'border-slate-300 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 dark:text-white/40 hover:border-slate-400 dark:border-white/20 hover:text-slate-700 dark:text-white/60'
                   }`}
                 >
                   {translateTerm(method, i18n.language)}
@@ -199,7 +200,7 @@ export function FilterSidebar() {
 
         {/* Spectral Type */}
         <div>
-          <label className='mb-2 block text-[10px] font-semibold uppercase tracking-wider text-white/30'>
+          <label className='mb-2 block text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-white/30'>
             {t('sidebar.spectralType')}
           </label>
           <div className='flex flex-wrap gap-1.5'>
@@ -217,7 +218,7 @@ export function FilterSidebar() {
                   className={`rounded-md border px-2.5 py-1 text-[10px] font-bold transition-all ${
                     isActive
                       ? 'border-primary/50 bg-primary/20 text-primary'
-                      : 'border-white/10 bg-white/5 text-white/40 hover:border-white/20 hover:text-white/60'
+                      : 'border-slate-300 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 dark:text-white/40 hover:border-slate-400 dark:border-white/20 hover:text-slate-700 dark:text-white/60'
                   }`}
                 >
                   {type}
@@ -268,10 +269,10 @@ function RangeFilter({
   return (
     <div>
       <div className='mb-1.5 flex items-center justify-between'>
-        <label className='text-[10px] font-semibold uppercase tracking-wider text-white/30'>
+        <label className='text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-white/30'>
           {label}
         </label>
-        <span className='font-mono text-[10px] text-white/40'>
+        <span className='font-mono text-[10px] text-slate-500 dark:text-slate-400 dark:text-white/40'>
           {localValue[0].toLocaleString()} – {localValue[1].toLocaleString()}
         </span>
       </div>

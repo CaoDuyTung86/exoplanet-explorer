@@ -22,12 +22,12 @@ export function PlanetDetailCard() {
   const earthComparison = getEarthComparison(planet, t)
 
   return (
-    <div className='pointer-events-auto absolute left-2 right-2 bottom-2 md:left-auto md:bottom-auto md:right-4 md:top-4 z-30 w-auto md:w-[380px] max-h-[50vh] md:max-h-[calc(100vh-8rem)] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/90 shadow-2xl shadow-primary/10 backdrop-blur-xl'>
+    <div className='pointer-events-auto absolute left-2 right-2 bottom-2 md:left-auto md:bottom-auto md:right-4 md:top-4 z-30 w-auto md:w-[380px] max-h-[50vh] md:max-h-[calc(100vh-8rem)] overflow-y-auto rounded-2xl border border-slate-300 dark:border-white/10 bg-slate-950/90 shadow-2xl shadow-primary/10 backdrop-blur-xl'>
       {/* Header */}
-      <div className='relative border-b border-white/10 p-5'>
+      <div className='relative border-b border-slate-300 dark:border-white/10 p-5'>
         <button
           onClick={() => setSelectedPlanet(null)}
-          className='absolute right-3 top-3 rounded-lg p-1.5 text-white/40 transition-colors hover:bg-white/10 hover:text-white'
+          className='absolute right-3 top-3 rounded-lg p-1.5 text-slate-500 dark:text-slate-400 dark:text-white/40 transition-colors hover:bg-slate-200 dark:bg-white/10 hover:text-slate-900 dark:text-white'
         >
           <X className='h-4 w-4' />
         </button>
@@ -36,21 +36,21 @@ export function PlanetDetailCard() {
           <span className='mb-1 inline-block rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary'>
             {translateTerm(planet.sizeCategory, i18n.language)}
           </span>
-          <h2 className='text-xl font-bold text-white'>{planet.pl_name}</h2>
-          <p className='mt-0.5 flex items-center gap-1.5 text-sm text-white/50'>
+          <h2 className='text-xl font-bold text-slate-900 dark:text-white'>{planet.pl_name}</h2>
+          <p className='mt-0.5 flex items-center gap-1.5 text-sm text-slate-600 dark:text-white/50'>
             <Star className='h-3.5 w-3.5' />
-            {t('detailCard.hostStar')}: <span className='font-medium text-white/70'>{planet.hostname}</span>
+            {t('detailCard.hostStar')}: <span className='font-medium text-slate-700 dark:text-white/70'>{planet.hostname}</span>
           </p>
         </div>
       </div>
 
       {/* Habitability Gauge */}
-      <div className='border-b border-white/10 p-5'>
+      <div className='border-b border-slate-300 dark:border-white/10 p-5'>
         <HabitabilityGauge score={planet.habitabilityScore} />
       </div>
 
       {/* Stats Grid */}
-      <div className='grid grid-cols-2 gap-px border-b border-white/10 bg-white/5'>
+      <div className='grid grid-cols-2 gap-px border-b border-slate-300 dark:border-white/10 bg-slate-100 dark:bg-white/5'>
         <StatCell
           icon={<Ruler className='h-3.5 w-3.5 text-blue-400' />}
           label={t('detailCard.radius')}
@@ -90,26 +90,26 @@ export function PlanetDetailCard() {
       </div>
 
       {/* Star info */}
-      <div className='p-4 text-xs text-white/50'>
-        <div className='mb-1 font-semibold uppercase tracking-wider text-white/30'>{t('detailCard.hostStarProperties')}</div>
+      <div className='p-4 text-xs text-slate-600 dark:text-white/50'>
+        <div className='mb-1 font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-white/30'>{t('detailCard.hostStarProperties')}</div>
         <div className='grid grid-cols-3 gap-2'>
           <div>
-            <span className='block text-white/30'>{t('detailCard.spectral')}</span>
-            <span className='font-mono text-white/70'>{planet.st_spectype || '—'}</span>
+            <span className='block text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-white/30'>{t('detailCard.spectral')}</span>
+            <span className='font-mono text-slate-700 dark:text-white/70'>{planet.st_spectype || '—'}</span>
           </div>
           <div>
-            <span className='block text-white/30'>{t('detailCard.temp')}</span>
-            <span className='font-mono text-white/70'>{planet.st_teff ? `${planet.st_teff} K` : '—'}</span>
+            <span className='block text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-white/30'>{t('detailCard.temp')}</span>
+            <span className='font-mono text-slate-700 dark:text-white/70'>{planet.st_teff ? `${planet.st_teff} K` : '—'}</span>
           </div>
           <div>
-            <span className='block text-white/30'>{t('detailCard.radius')}</span>
-            <span className='font-mono text-white/70'>{planet.st_rad ? `${planet.st_rad} R☉` : '—'}</span>
+            <span className='block text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-white/30'>{t('detailCard.radius')}</span>
+            <span className='font-mono text-slate-700 dark:text-white/70'>{planet.st_rad ? `${planet.st_rad} R☉` : '—'}</span>
           </div>
         </div>
         {planet.disc_telescope && (
-          <div className='mt-2 border-t border-white/5 pt-2'>
-            <span className='text-white/30'>{t('detailCard.telescope')}: </span>
-            <span className='text-white/60'>
+          <div className='mt-2 border-t border-slate-200 dark:border-white/5 pt-2'>
+            <span className='text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-white/30'>{t('detailCard.telescope')}: </span>
+            <span className='text-slate-700 dark:text-white/60'>
               {planet.disc_telescope.includes('Multiple') ? t('detailCard.multipleTelescopes') : planet.disc_telescope}
             </span>
           </div>
@@ -117,7 +117,7 @@ export function PlanetDetailCard() {
       </div>
 
       {/* Earth Comparison Bar */}
-      <div className='border-t border-white/10 bg-emerald-500/5 p-4'>
+      <div className='border-t border-slate-300 dark:border-white/10 bg-emerald-500/5 p-4'>
         <div className='mb-2 text-[10px] font-semibold uppercase tracking-wider text-emerald-400/80'>
           {t('detailCard.comparedToEarth')}
         </div>
@@ -129,19 +129,19 @@ export function PlanetDetailCard() {
       </div>
 
       {/* 3D Comparison Toggle */}
-      <div className='border-t border-white/10 p-4 bg-black/20'>
+      <div className='border-t border-slate-300 dark:border-white/10 p-4 bg-black/20'>
         <div className='flex items-center justify-between'>
           <div className='flex items-center gap-2'>
             <Globe className='h-4 w-4 text-blue-400' />
             <div>
               <div className='text-xs font-semibold text-white/90'>{t('detailCard.sizeComparison3d')}</div>
-              <div className='text-[9px] text-white/40'>{t('detailCard.summonEarthJupiter')}</div>
+              <div className='text-[9px] text-slate-500 dark:text-slate-400 dark:text-white/40'>{t('detailCard.summonEarthJupiter')}</div>
             </div>
           </div>
           <button
             onClick={() => setShowComparison(!showComparison)}
             className={`relative flex h-5 w-9 items-center rounded-full p-0.5 transition-colors ${
-              showComparison ? 'bg-blue-500' : 'bg-white/10'
+              showComparison ? 'bg-blue-500' : 'bg-slate-200 dark:bg-white/10'
             }`}
           >
             <span
@@ -154,10 +154,10 @@ export function PlanetDetailCard() {
       </div>
 
       {/* Exit Spectate / Return Button */}
-      <div className='border-t border-white/10 p-3 bg-white/5'>
+      <div className='border-t border-slate-300 dark:border-white/10 p-3 bg-slate-100 dark:bg-white/5'>
         <button
           onClick={() => setSelectedPlanet(null)}
-          className='w-full rounded-xl bg-white/10 py-2 text-xs font-semibold text-white hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2 border border-white/10 shadow-lg'
+          className='w-full rounded-xl bg-slate-200 dark:bg-white/10 py-2 text-xs font-semibold text-slate-900 dark:text-white hover:bg-primary hover:text-slate-900 dark:text-white transition-all flex items-center justify-center gap-2 border border-slate-300 dark:border-white/10 shadow-lg'
         >
           <span>←</span> {t('controls.backToMap')}
         </button>
@@ -169,11 +169,11 @@ export function PlanetDetailCard() {
 function StatCell({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
   return (
     <div className='bg-slate-950/50 p-3'>
-      <div className='mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/40'>
+      <div className='mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 dark:text-white/40'>
         {icon} {label}
       </div>
       <div className='font-mono text-sm font-semibold text-white/90'>{value}</div>
-      {sub && <div className='mt-0.5 text-[10px] text-white/30'>{sub}</div>}
+      {sub && <div className='mt-0.5 text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-white/30'>{sub}</div>}
     </div>
   )
 }
@@ -187,14 +187,14 @@ function ComparisonBar({ label, ratio, max, color }: { label: string; ratio: num
   }
   return (
     <div className='flex items-center gap-2'>
-      <span className='w-16 text-[10px] text-white/40'>{label}</span>
-      <div className='h-1.5 flex-1 overflow-hidden rounded-full bg-white/5'>
+      <span className='w-16 text-[10px] text-slate-500 dark:text-slate-400 dark:text-white/40'>{label}</span>
+      <div className='h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5'>
         <div
           className={`h-full rounded-full transition-all duration-700 ${colorMap[color] || 'bg-primary'}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className='w-10 text-right font-mono text-[10px] text-white/50'>{ratio.toFixed(1)}</span>
+      <span className='w-10 text-right font-mono text-[10px] text-slate-600 dark:text-white/50'>{ratio.toFixed(1)}</span>
     </div>
   )
 }
