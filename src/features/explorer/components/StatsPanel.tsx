@@ -236,6 +236,7 @@ export function StatsPanel() {
   const { t, i18n } = useTranslation()
   const filteredPlanets = useExplorerStore((s) => s.filteredPlanets)
   const selectedPlanet = useExplorerStore((s) => s.selectedPlanet)
+  const sidebarOpen = useExplorerStore((s) => s.sidebarOpen)
 
   // Animated counts
   const totalCount = useCountUp(filteredPlanets.length)
@@ -303,7 +304,11 @@ export function StatsPanel() {
   if (selectedPlanet) return null
 
   return (
-    <div className="pointer-events-auto absolute left-4 top-4 z-20 space-y-2.5 w-72 md:w-80">
+    <div
+      className={`pointer-events-auto absolute top-4 z-20 space-y-2.5 w-72 md:w-80 transition-all duration-300 ease-in-out ${
+        sidebarOpen ? 'left-[19rem] md:left-[21rem]' : 'left-4'
+      }`}
+    >
       {/* Main counter cards */}
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-slate-300 dark:border-white/10 bg-slate-950/85 p-3 backdrop-blur-xl shadow-2xl">
