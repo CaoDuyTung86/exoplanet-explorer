@@ -1,53 +1,164 @@
 # 🌌 Exoplanet Explorer 3D
 
-An immersive, highly optimized 3D web application that visualizes over 5,700 confirmed exoplanets using real data from the NASA Exoplanet Archive. Built with React, Three.js, and WebGL, this project pushes the boundaries of browser-based 3D rendering and procedural generation.
+[![CI](https://github.com/CaoDuyTung86/exoplanet-explorer/actions/workflows/ci.yml/badge.svg)](https://github.com/CaoDuyTung86/exoplanet-explorer/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-![Exoplanet Explorer Banner]<img width="675" height="366" alt="vutru" src="https://github.com/user-attachments/assets/a48d002b-8743-443f-af0b-f397a3fd9d6b" />
+An interactive 3D star map of every confirmed exoplanet in the NASA Exoplanet Archive
+(~6,300 worlds), rendered in the browser with WebGL. Fly between star systems, filter by
+physical properties, and compare candidates against our own Solar System.
 
-## 🚀 Key Features
+*[Đọc bằng Tiếng Việt →](README-vi.md)*
 
-*   **Interactive 3D Universe:** Explore 5,700+ planets rendered in real-time at 60-165 FPS. Seamlessly fly between star systems with smooth camera interpolation.
-*   **Procedural AAA Shaders:** Custom WebGL GLSL shaders for Gas Giants (swirling bands), Lava planets (glowing cracks), and Rocky planets (Simplex noise bumps) - all calculated dynamically based on NASA planet data.
-*   **Ambient Audio Synthesizer:** Zero-dependency procedural audio using the Web Audio API. Generates deep-space drone sounds where the pitch scales with the planet's radius and the filter cutoff scales with its temperature.
-*   **Real NASA Data & Web Worker:** Fetches and processes massive datasets from the NASA TAP API using an off-main-thread Web Worker to prevent UI freezing.
-*   **Habitability Analysis:** Calculates a Habitability Score (0-100) based on equilibrium temperature and planet radius, complete with a glowing Habitable Zone ring visualization.
-*   **Multi-language Support (i18n):** Supports English and Vietnamese, featuring a specialized translation algorithm for complex astronomical terms (e.g., *Radial Velocity* -> *Vận tốc xuyên tâm*).
+<img width="675" alt="Exoplanet Explorer banner" src="https://github.com/user-attachments/assets/a48d002b-8743-443f-af0b-f397a3fd9d6b" />
 
-## 🛠️ Technology Stack
+## 🚀 Features
 
-*   **Frontend Framework:** React 18, TypeScript, Vite
-*   **3D Engine:** Three.js, React Three Fiber (R3F), React Three Drei
-*   **Styling:** Tailwind CSS, Lucide React (Icons)
-*   **State Management:** Zustand
-*   **Audio:** Howler.js & Native Web Audio API (BiquadFilters, Oscillators)
-*   **Data Source:** NASA Exoplanet Archive (TAP API)
+- **Interactive 3D universe** — every planet drawn in a single `THREE.InstancedMesh` draw call,
+  with smooth camera interpolation when flying to a system and a spectate mode that tracks
+  the target as it orbits.
+- **Procedural shaders** — gas giants, lava worlds and rocky planets are shaded by GLSL
+  injected into `MeshStandardMaterial` via `onBeforeCompile`, driven by each planet's real
+  NASA parameters. No per-planet textures, so the bundle stays small.
+- **The Solar System as a reference frame** — the Sun and eight planets sit at the origin with
+  real textures, giving every exoplanet a familiar scale to be judged against.
+- **Habitability scoring** — a 0–100 heuristic over equilibrium temperature, radius, mass and
+  stellar spectral type, visualised with a habitable-zone ring.
+- **Server-side data pipeline** — normalisation, habitability scoring and the 3D projection
+  run once during ingest, not in every visitor's browser. The client receives packed binary
+  and builds typed-array views from it, with no JSON parsing on the critical path.
+- **Ambient audio synthesis** — Web Audio oscillators and biquad filters generate a drone per
+  planet: pitch follows radius, filter cutoff follows temperature.
+- **Filtering and table view** — radius, mass, temperature, distance, orbital period, discovery
+  method, spectral class and discovery year, plus a virtualised data table.
+- **English / Vietnamese** — including a dictionary for astronomical terms
+  (*Radial Velocity* → *Vận tốc xuyên tâm*).
 
-## 💻 Running Locally
+## 🛠️ Tech stack
 
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/yourusername/exoplanet-explorer.git
-    cd exoplanet-explorer
-    ```
-2.  Install dependencies:
-    ```bash
-    pnpm install
-    ```
-3.  Start the development server:
-    ```bash
-    pnpm run dev
-    ```
+| Layer | Choice |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite 8 |
+| 3D | Three.js, React Three Fiber, Drei, postprocessing |
+| Routing / data | TanStack Router, TanStack Query, TanStack Virtual |
+| State | Zustand |
+| Styling | Tailwind CSS v4, Lucide icons |
+| Audio | Howler.js + native Web Audio API |
+| i18n | i18next / react-i18next |
+| PWA | vite-plugin-pwa |
+| **API** | **Python 3.13, FastAPI, asyncpg, numpy** |
+| **Database** | **Postgres 17 (Docker Compose)** |
+| Data source | [NASA Exoplanet Archive](https://exoplanetarchive.ipac.caltech.edu/) TAP API (`pscomppars`) |
 
-## 🧠 Technical Highlights
+## 💻 Running locally
 
-### InstancedMesh Optimization
-To render 5,700 spheres without melting the GPU, the project utilizes `THREE.InstancedMesh`. This allows a single draw call for all planets. The hit-boxes (for raycasting) dynamically scale down when spectating a planet to prevent accidental clicks while maintaining easy selection from a distance.
+```bash
+git clone https://github.com/CaoDuyTung86/exoplanet-explorer.git
+```
 
-### Procedural Shaders (`onBeforeCompile`)
-Instead of loading thousands of heavy texture images, the application injects procedural noise algorithms (Simplex 3D) directly into the `MeshStandardMaterial` shaders. This means lighting, shadows, and stunning visual effects are generated on the GPU mathematically, keeping the bundle size tiny and performance ultra-high.
+```bash
+cd exoplanet-explorer && pnpm install
+```
 
-### React StrictMode Race-Condition Fix
-Implemented a global Promise caching mechanism to prevent double-fetching from the NASA API during React 18's Strict Mode mount cycle, saving bandwidth and preventing rate-limiting aborts.
+Start Postgres, then run the first ingest (this also applies the migrations):
 
----
-*Created as a passion project to combine astronomy, data visualization, and advanced web graphics.*
+```bash
+docker compose up -d db
+```
+
+```bash
+cd server && python -m venv .venv && .venv/Scripts/python -m pip install -r requirements-dev.txt
+```
+
+```bash
+cd server && .venv/Scripts/python -m app.ingest
+```
+
+Then run the API and the frontend:
+
+```bash
+cd server && .venv/Scripts/python -m uvicorn app.main:app --reload
+```
+
+```bash
+pnpm dev
+```
+
+On Linux or macOS use `.venv/bin/python` instead of `.venv/Scripts/python`.
+
+The frontend is served on port 3001 and proxies `/api/v1` to the API, so no environment
+variables are needed. The dot beside the planet count in the header is green when the data
+came from the API and amber when the app has fallen back to a degraded source.
+
+**The frontend also runs on its own**, without the backend: it falls back to fetching NASA
+directly and computing everything in the browser, and says so in a banner.
+
+| Script | Purpose |
+| --- | --- |
+| `pnpm dev` | Vite dev server |
+| `pnpm build` | Type-check then production build |
+| `pnpm tsc` | Type-check only |
+| `pnpm lint` | ESLint |
+| `pnpm format` | Prettier write |
+| `pytest -q` (in `server/`) | API test suite |
+
+Helper scripts under `scripts/` are one-off asset generators, not part of the build:
+`generate_icons.cjs` renders the PNG icon set procedurally, `generate_sounds.cjs` synthesises
+the UI sound effects as WAV, and `download_textures.cjs` fetches the Solar System textures.
+
+## 🧠 Technical notes
+
+**InstancedMesh.** Drawing ~6,300 spheres as individual meshes would mean ~6,300 draw calls.
+Instead a single instanced mesh carries per-instance matrices and colours. Raycast hit-boxes
+scale down while spectating so a nearby planet does not swallow clicks meant for the one
+behind it.
+
+**Procedural materials.** Rather than shipping thousands of texture images, Simplex 3D noise is
+injected into the standard material's shader chunks. Lighting, shadows and surface detail are
+computed on the GPU from the planet's radius, temperature and density.
+
+**StrictMode double-fetch.** React's development StrictMode mounts effects twice, which fired
+two catalog requests and occasionally tripped NASA's rate limiting. A module-level promise cache
+in `nasaApi.ts` collapses concurrent callers onto one in-flight request.
+
+## 🛰️ Architecture
+
+The browser does not talk to NASA. A scheduled ingest pulls the archive, derives every
+computed field once, and stores the result in Postgres; the API then serves it as a packed
+binary that the renderer feeds almost directly to the GPU.
+
+```
+ingest ──► NASA TAP ──► derive ──► Postgres ──► FastAPI ──► browser
+                                                  │
+                              /v1/catalog.bin  ───┘  positions, colours, numeric columns
+                              /v1/catalog/meta ───►  names and string columns, loaded lazily
+```
+
+Measured against the live catalog (6,287 planets):
+
+| | Before: NASA JSON in the browser | After: `catalog.bin` |
+| --- | --- | --- |
+| Raw payload | 2,431.8 KB | **368.4 KB** |
+| Over the wire (gzip) | 330.3 KB | **226.5 KB** |
+| Client-side work | `JSON.parse` + ~6,300 objects + trigonometry per planet | typed-array views |
+| Repeat visit | full download | **`304`, 0 bytes** |
+
+Removing the public CORS proxy that used to sit in the production path mattered as much as
+the size: the app no longer depends on an unaffiliated third party to load its own data.
+
+See [`server/README.md`](server/README.md) for the API, the binary format, and the schema.
+
+## 🗺️ Roadmap
+
+Phases 1 and 2 (cleanup, and the ingest pipeline plus API) are done. Next up are the
+features a backend makes possible: catalog time-travel, similarity search with pgvector,
+shareable views, and realtime presence.
+
+**See [ROADMAP.md](ROADMAP.md) for the phased plan and current progress.**
+
+## 📄 License
+
+MIT — see [LICENSE](LICENSE).
+
+Exoplanet data courtesy of the [NASA Exoplanet Archive](https://exoplanetarchive.ipac.caltech.edu/),
+operated by Caltech under contract with NASA. Solar System textures from
+[Solar System Scope](https://www.solarsystemscope.com/textures/) (CC BY 4.0).

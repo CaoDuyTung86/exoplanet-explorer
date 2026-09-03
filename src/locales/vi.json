@@ -114,5 +114,10 @@
     "type": "Phân Loại",
     "discovery": "Phương Pháp Khám Phá",
     "year": "Năm"
+  },
+  "data": {
+    "degradedNoApi": "Không kết nối được API catalog — đang tải thẳng từ NASA và tính toán ngay trên trình duyệt. Hãy khởi động API để chạy đường nhanh.",
+    "offlineFallback": "Không kết nối được API catalog lẫn NASA. Chỉ đang hiển thị 7 ngoại hành tinh tiêu biểu được chọn sẵn.",
+    "dismiss": "Bỏ qua"
   }
 }

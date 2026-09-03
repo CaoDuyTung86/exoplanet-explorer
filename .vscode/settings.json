@@ -8,5 +8,6 @@
     "tdClassName:\\s*'([^']*)'",
     "thClassName:\\s*\"([^\"]*)\"",
     "thClassName:\\s*'([^']*)'"
-  ]
+  ],
+  "specstory.cloudSync.enabled": "never"
 }

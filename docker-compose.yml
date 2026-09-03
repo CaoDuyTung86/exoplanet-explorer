@@ -1,0 +1,43 @@
+name: exoplanet-explorer
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: exo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: exo
+      POSTGRES_PASSWORD: exo_dev_password
+      POSTGRES_DB: exoplanets
+      # Deterministic collation so ORDER BY is identical on every machine and in CI.
+      POSTGRES_INITDB_ARGS: '--locale=C --encoding=UTF8'
+    ports:
+      # Host port 5433 to avoid clashing with a Postgres already installed locally.
+      - '5433:5432'
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U exo -d exoplanets']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ./server
+    container_name: exo-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://exo:exo_dev_password@db:5432/exoplanets
+      CORS_ORIGINS: http://localhost:3001,http://127.0.0.1:3001
+    ports:
+      - '8000:8000'
+    depends_on:
+      db:
+        condition: service_healthy
+    # Enabled with: docker compose --profile api up -d
+    # While developing the API itself, run it on the host with `uvicorn --reload` instead.
+    profiles: ['api']
+
+volumes:
+  db_data:

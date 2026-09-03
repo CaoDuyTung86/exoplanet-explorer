@@ -152,7 +152,9 @@ export function DataTable() {
                     {planet.pl_bmasse !== null ? `${planet.pl_bmasse.toFixed(2)} M⊕` : '—'}
                   </td>
                   <td className='py-3 px-4 text-slate-700 dark:text-white/70'>
-                    {planet.pl_eqt !== null ? `${planet.pl_eqt} K` : '—'}
+                    {/* Equilibrium temperature is a modelled value good to a few kelvin,
+                        so printing every digit the float happens to carry is noise. */}
+                    {planet.pl_eqt !== null ? `${Math.round(planet.pl_eqt)} K` : '—'}
                   </td>
                   <td className='py-3 px-4 text-slate-500 dark:text-slate-400 dark:text-white/40 text-[10px]'>
                     {translateTerm(planet.discoverymethod, i18n.language)} ({planet.disc_year})

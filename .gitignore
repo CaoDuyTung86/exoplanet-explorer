@@ -32,8 +32,6 @@ dist-ssr
 # Vitest artifacts (browser screenshots/attachments)
 **/__screenshots__/
 .vitest-attachments/
-public/images/shadcn-admin.png
-.github/CODE_OF_CONDUCT.md
 
 # Build & Vite caches
 .vite/
@@ -47,3 +45,6 @@ public/images/shadcn-admin.png
 .env.production.local
 Thumbs.db
 Desktop.ini
+
+# SpecStory extension — auto-saved AI chat transcripts, local only
+.specstory/

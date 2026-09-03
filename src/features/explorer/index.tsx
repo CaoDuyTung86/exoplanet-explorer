@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Rocket, PanelLeft, Table2, Box, Volume2, VolumeX } from 'lucide-react'
+import { Rocket, PanelLeft, Table2, Box, Volume2, VolumeX, TriangleAlert } from 'lucide-react'
 import { useExplorerStore } from './stores/explorerStore'
-import { fetchExoplanets } from './services/nasaApi'
+import { fetchCatalog } from './services/catalogApi'
+import { fetchExoplanets, getCuratedFallback, processExoplanets } from './services/nasaApi'
+import type { ProcessedPlanet } from './types'
 import { playBgm, toggleAudioMute, isAudioMuted } from './services/audio'
 import { StarMap3D } from './components/StarMap3D'
 import { PlanetDetailCard } from './components/PlanetDetailCard'
@@ -12,9 +14,14 @@ import { LanguageToggle } from './components/LanguageToggle'
 import { StatsPanel } from './components/StatsPanel'
 import { useTranslation } from 'react-i18next'
 
+/** Where the currently displayed catalog came from. */
+type DataSource = 'api' | 'legacy' | 'curated'
+
 export function ExplorerPage() {
   const { t, i18n } = useTranslation()
   const [isMuted, setIsMuted] = useState(() => isAudioMuted())
+  const [dataSource, setDataSource] = useState<DataSource | null>(null)
+  const [loadWarning, setLoadWarning] = useState<string | null>(null)
   const setPlanets = useExplorerStore((s) => s.setPlanets)
   const setLoading = useExplorerStore((s) => s.setLoading)
   const isLoading = useExplorerStore((s) => s.isLoading)
@@ -32,42 +39,76 @@ export function ExplorerPage() {
 
     let cancelled = false
 
-    async function loadData() {
-      try {
-        setLoading(true)
-        const raw = await fetchExoplanets()
-        if (cancelled) return
+    /**
+     * Legacy path: pull the raw catalog from NASA and derive everything in a worker.
+     * This is what the app used to do on every load; it now only runs when our own
+     * catalog API is unreachable.
+     */
+    async function loadFromNasaDirect(): Promise<ProcessedPlanet[]> {
+      const raw = await fetchExoplanets()
 
-        // Spawn a web worker to process data without blocking the main thread
+      return new Promise<ProcessedPlanet[]>((resolve, reject) => {
         const worker = new Worker(new URL('./services/planetWorker.ts', import.meta.url), {
           type: 'module',
         })
-
         worker.onmessage = (e) => {
-          if (cancelled) {
-            worker.terminate()
-            return
-          }
+          worker.terminate()
           if (e.data.type === 'SUCCESS') {
-            setPlanets(e.data.payload)
+            resolve(e.data.payload as ProcessedPlanet[])
           } else {
-            console.error('Worker failed to process data:', e.data.error)
-            setLoading(false)
+            reject(new Error(e.data.error))
           }
-          worker.terminate() // Cleanup worker after it finishes
         }
-
+        worker.onerror = (e) => {
+          worker.terminate()
+          reject(new Error(e.message))
+        }
         worker.postMessage({ rawData: raw })
-      } catch (err) {
-        console.error('Failed to fetch NASA exoplanet data:', err)
-        setLoading(false)
+      })
+    }
+
+    async function loadData() {
+      setLoading(true)
+
+      // 1. Our own API: pre-processed, binary, no NASA on the critical path.
+      try {
+        const { planets: decoded, bytes } = await fetchCatalog()
+        if (cancelled) return
+        setDataSource('api')
+        setPlanets(decoded)
+        console.info(
+          `Catalog loaded from API: ${decoded.length} planets, ${(bytes / 1024).toFixed(1)} KB binary`
+        )
+        return
+      } catch (apiError) {
+        if (cancelled) return
+        console.warn('Catalog API unavailable, falling back to direct NASA fetch.', apiError)
       }
+
+      // 2. Degraded: straight to NASA, deriving everything client-side.
+      try {
+        const fromNasa = await loadFromNasaDirect()
+        if (cancelled) return
+        setDataSource('legacy')
+        setLoadWarning(t('data.degradedNoApi'))
+        setPlanets(fromNasa)
+        return
+      } catch (nasaError) {
+        if (cancelled) return
+        console.error('Direct NASA fetch failed as well.', nasaError)
+      }
+
+      // 3. Nothing worked. Show the curated handful and say so out loud, rather than
+      //    quietly pretending the catalog only ever had seven planets in it.
+      setDataSource('curated')
+      setLoadWarning(t('data.offlineFallback'))
+      setPlanets(processExoplanets(getCuratedFallback()))
     }
 
     loadData()
 
     return () => { cancelled = true }
-  }, [planets.length, setPlanets, setLoading])
+  }, [planets.length, setPlanets, setLoading, t])
 
   // Start BGM on first interaction (Autoplay policy bypass via capture phase)
   useEffect(() => {
@@ -136,9 +177,18 @@ export function ExplorerPage() {
             </button>
           </div>
 
-          {/* Planet count */}
+          {/* Planet count + where the data came from */}
           <div className='hidden h-8 items-center gap-2 rounded-lg border border-cyan-500/20 bg-slate-100 dark:bg-slate-900/60 px-3 font-mono text-xs text-slate-600 dark:text-slate-300 backdrop-blur-md sm:flex transition-colors duration-300'>
-            <span className='h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' />
+            <span
+              className={`h-2 w-2 animate-pulse rounded-full ${
+                dataSource === null
+                  ? 'bg-slate-400'
+                  : dataSource === 'api'
+                    ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]'
+                    : 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]'
+              }`}
+              title={dataSource === 'api' ? 'Catalog API' : 'Degraded source'}
+            />
             <span>{filteredPlanets.length.toLocaleString()} {i18n.language.startsWith('vi') ? 'hành tinh' : 'planets loaded'}</span>
           </div>
 
@@ -178,6 +228,21 @@ export function ExplorerPage() {
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Degraded-mode banner. The old code failed silently; a visitor had no way to
+          tell whether they were looking at 6,000 planets or the seven-planet fallback. */}
+      {loadWarning && (
+        <div className='flex shrink-0 items-center gap-2 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-600 dark:text-amber-300'>
+          <TriangleAlert className='h-3.5 w-3.5 shrink-0' />
+          <span className='flex-1'>{loadWarning}</span>
+          <button
+            onClick={() => setLoadWarning(null)}
+            className='rounded px-2 py-0.5 font-medium transition-colors hover:bg-amber-500/20'
+          >
+            {t('data.dismiss')}
+          </button>
         </div>
       )}
 

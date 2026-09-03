@@ -1,6 +1,5 @@
 import type { Exoplanet, ProcessedPlanet } from '../types'
 
-const DIRECT_URL = 'https://exoplanetarchive.ipac.caltech.edu/TAP/sync'
 const QUERY = `SELECT pl_name, hostname, sy_dist, pl_rade, pl_bmasse, pl_eqt, pl_orbper, pl_orbsmax, discoverymethod, disc_year, disc_telescope, st_teff, st_rad, st_spectype, ra, dec FROM pscomppars WHERE pl_rade IS NOT NULL AND sy_dist IS NOT NULL ORDER BY sy_dist ASC`
 
 /** Solar System planets positioned around Origin [0,0,0] */
@@ -264,11 +263,20 @@ const CURATED_FAMOUS_EXOPLANETS: Exoplanet[] = [
 ]
 
 const PROXY_URL = '/api/nasa/TAP/sync'
-const CORS_PROXY_URL = 'https://corsproxy.io/?' + encodeURIComponent(DIRECT_URL)
 
 let cachedFetchPromise: Promise<Exoplanet[]> | null = null
 
-/** Fetch exoplanets from NASA TAP API with Solar System included */
+/**
+ * Legacy path: talk to NASA straight from the browser.
+ *
+ * This is no longer the primary way the app gets its data — see `catalogApi.ts`, which
+ * reads the pre-processed catalog from our own API. It is kept as an explicitly degraded
+ * fallback so someone who clones the repo without running the backend still sees a map.
+ *
+ * The public `corsproxy.io` fallback that used to live here was removed: routing every
+ * visitor's data request through an unaffiliated third party is not something a
+ * production path should do, and it silently swallowed failures.
+ */
 export function fetchExoplanets(): Promise<Exoplanet[]> {
   if (!cachedFetchPromise) {
     cachedFetchPromise = doFetchExoplanets().catch((err) => {
@@ -282,36 +290,23 @@ export function fetchExoplanets(): Promise<Exoplanet[]> {
 async function doFetchExoplanets(): Promise<Exoplanet[]> {
   const queryParam = `?query=${encodeURIComponent(QUERY)}&format=json`
 
-  // 1. Try local Vite proxy first (for dev)
-  try {
-    console.log('Fetching from NASA TAP API via local proxy...')
-    const res = await fetch(PROXY_URL + queryParam, { signal: AbortSignal.timeout(30000) })
-    if (res.ok) {
-      const data: Exoplanet[] = await res.json()
-      if (Array.isArray(data) && data.length > 0) {
-        console.log(`Successfully fetched ${data.length} planets from NASA via local proxy.`)
-        return data
-      }
-    }
-  } catch (error) {
-    console.warn('Local proxy failed, trying public CORS proxy...', error)
+  // In dev the Vite proxy handles CORS. In a static production build there is no proxy,
+  // so this request will fail — which is correct: the catalog API is the supported path.
+  const res = await fetch(PROXY_URL + queryParam, { signal: AbortSignal.timeout(30000) })
+  if (!res.ok) {
+    throw new Error(`NASA TAP API returned ${res.status}`)
   }
 
-  // 2. Try public CORS proxy (for production preview / Vercel without backend)
-  try {
-    const res = await fetch(CORS_PROXY_URL + queryParam, { signal: AbortSignal.timeout(30000) })
-    if (res.ok) {
-      const data: Exoplanet[] = await res.json()
-      if (Array.isArray(data) && data.length > 0) {
-        console.log(`Successfully fetched ${data.length} planets from NASA via CORS proxy.`)
-        return data
-      }
-    }
-  } catch (error) {
-    console.error('CORS proxy also failed:', error)
+  const data: Exoplanet[] = await res.json()
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error('NASA TAP API returned an empty catalog')
   }
 
-  console.warn('All NASA API endpoints failed. Loading curated backup dataset.')
+  return data
+}
+
+/** Seven well-known planets, shown only when everything else has failed. */
+export function getCuratedFallback(): Exoplanet[] {
   return CURATED_FAMOUS_EXOPLANETS
 }
 

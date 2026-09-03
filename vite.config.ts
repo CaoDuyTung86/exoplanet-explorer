@@ -26,12 +26,19 @@ export default defineConfig({
             src: 'pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any',
           },
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable',
+            purpose: 'any',
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
           },
         ],
       },
@@ -60,6 +67,16 @@ export default defineConfig({
     port: 3001,
     strictPort: false,
     proxy: {
+      // Our own catalog API (server/). Start it with:
+      //   docker compose up -d db
+      //   cd server && .venv/Scripts/python -m uvicorn app.main:app --reload
+      '/api/v1': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+      // Legacy direct-to-NASA path, kept only as the degraded fallback for when the
+      // catalog API is not running. See services/nasaApi.ts.
       '/api/nasa': {
         target: 'https://exoplanetarchive.ipac.caltech.edu',
         changeOrigin: true,

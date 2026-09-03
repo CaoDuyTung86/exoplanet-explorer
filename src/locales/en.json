@@ -2,7 +2,7 @@
   "appName": "EXOPLANET EXPLORER",
   "loading": {
     "title": "INITIALIZING UNIVERSE",
-    "subtitle": "Processing 5,700+ confirmed exoplanets..."
+    "subtitle": "Processing 6,000+ confirmed exoplanets..."
   },
   "stats": {
     "visibleExoplanets": "VISIBLE EXOPLANETS",
@@ -114,5 +114,10 @@
     "type": "Type",
     "discovery": "Discovery Method",
     "year": "Year"
+  },
+  "data": {
+    "degradedNoApi": "Catalog API unreachable — falling back to a direct NASA request and computing everything in your browser. Start the API for the fast path.",
+    "offlineFallback": "Could not reach the catalog API or NASA. Showing a curated set of seven well-known exoplanets only.",
+    "dismiss": "Dismiss"
   }
 }
