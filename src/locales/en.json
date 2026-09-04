@@ -147,5 +147,34 @@
     "viewing": "Looking at {{planet}}",
     "browsing": "Browsing the map",
     "aloneHere": "Nobody else is on the map right now."
+  },
+  "timeMachine": {
+    "open": "Time machine",
+    "close": "Close time machine",
+    "play": "Play",
+    "pause": "Pause",
+    "restart": "Back to the start",
+    "scrub": "Discovery year",
+    "known": "planets known",
+    "thisYear": "this year",
+    "notable": "Most habitable",
+    "hint": "Space to play or pause · arrow keys step one year · planets found in the year on screen flare up. Filters still apply."
+  },
+  "revisions": {
+    "title": "Measurement history",
+    "empty": "No revisions recorded yet. NASA's archive only serves the present, so this list starts from our first ingest and grows each time a value is refined.",
+    "fields": {
+      "pl_rade": "Radius",
+      "pl_bmasse": "Mass",
+      "pl_eqt": "Eq. temp",
+      "pl_orbper": "Period",
+      "pl_orbsmax": "Semi-axis",
+      "sy_dist": "Distance",
+      "st_teff": "Star temp",
+      "st_rad": "Star radius",
+      "st_spectype": "Spectral",
+      "disc_year": "Disc. year",
+      "habitability_score": "Habitability"
+    }
   }
 }

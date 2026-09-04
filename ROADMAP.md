@@ -88,6 +88,9 @@ phách) → cả hai chết → 7 hành tinh curated (banner hổ phách). Khôn
 | `src/features/explorer/stores/presenceStore.ts` | Client WebSocket + reconnect backoff |
 | `src/features/explorer/components/AccountMenu.tsx` | Đăng nhập/đăng ký + danh sách đã lưu |
 | `src/features/explorer/components/PresenceBar.tsx` | Ai đang online, đang xem hành tinh nào |
+| `server/app/history.py` | Tái dựng lịch sử đo đạc + tổng hợp mốc thời gian (thuần, không I/O) |
+| `src/features/explorer/components/TimeMachine.tsx` | Thanh tua năm, biểu đồ cột, phát lại |
+| `src/features/explorer/components/PlanetRevisions.tsx` | Danh sách lần hiệu chỉnh trong thẻ chi tiết |
 | `docker-compose.yml` | Postgres · Redis (+ API qua `--profile api`) |
 
 ---
@@ -204,12 +207,43 @@ Chi tiết:
 - [x] Redis chết giữa chừng: `/v1/presence` trả `degraded: true` thay vì 500
 - [x] Thêm **45 test** (tổng 97): `test_security.py`, `test_presence.py`
 
+##### Time machine (2026-09-04)
+
+- [x] `GET /v1/timeline` — số hành tinh tìm ra từng năm, cộng dồn, phương pháp áp đảo, và
+      hành tinh đáng sống nhất của năm đó. Tính bằng SQL (`mode() WITHIN GROUP`,
+      `DISTINCT ON`) thay vì quét mảng ở client.
+- [x] **Điền năm trống.** Postgres chỉ trả về năm có dữ liệu; 1993 thật sự không có phát
+      hiện nào. Nếu để nguyên thì thanh tua nhảy cóc và năm trống trông như chưa từng tồn
+      tại — nên mọi năm trong khoảng đều có một dòng, cộng dồn giữ nguyên.
+- [x] `GET /v1/planets/{id}/history` — **thứ NASA không trả lời được.** TAP API chỉ phục
+      vụ hiện tại: bán kính được tinh chỉnh từ 2,1 xuống 1,8 R⊕ thì con số cũ biến mất bên
+      họ. Ingest từ Giai đoạn 2 đã giữ lại mọi giá trị bị ghi đè nên phát lại được.
+- [x] **Đảo chiều bản ghi.** `planet_history.previous` lưu giá trị *trước khi* lần chạy đó
+      ghi đè — rẻ khi ghi nhưng ngược chiều khi đọc. Giá trị *sau* lần chạy N chính là
+      snapshot mà lần chạy N+1 lưu lại; riêng lần gần nhất mới lấy từ hàng hiện tại. Đọc
+      hàng hiện tại cho mọi lần sẽ báo sai: mỗi lần chạy cũ trông như nhảy thẳng tới số
+      hôm nay.
+- [x] Thanh tua + biểu đồ cột theo năm (thang căn bậc hai — riêng 2014 nhiều hơn cả 15 năm
+      đầu cộng lại, để thang tuyến tính thì mọi năm trước Kepler chỉ là một vạch vô hình)
+- [x] Phát lại bằng `requestAnimationFrame` với bộ tích lũy theo đồng hồ thực, không dùng
+      `setInterval`: tab chạy nền bị bóp cả hai, nhưng bộ tích lũy quay lại đúng năm mà
+      thời gian đã trôi chỉ tới, thay vì bò qua một đống tick tồn đọng.
+- [x] **Không nhét năm vào `applyFilters`.** Bộ lọc trả lời "tôi quan tâm hành tinh nào",
+      dòng thời gian trả lời "trong số đó cái nào đã được biết". Gộp vào sẽ quét lại 6.287
+      phần tử mỗi bước animation. Thay vào đó `timelineOrder` sắp xếp sẵn theo năm một
+      lần, nên mỗi bước chỉ là một phép tìm nhị phân cộng một lát cắt tiền tố.
+- [x] Hành tinh tìm ra đúng năm đang xem được phóng to 2,4× và pha trắng, để mỗi bước là
+      một sự kiện chứ không phải một con số lặng lẽ đổi
+- [x] Hệ Mặt Trời miễn trừ khỏi dòng thời gian (giống như đã miễn trừ khỏi `applyFilters`)
+      — 1992 không nên là khoảng không có cả Trái Đất
+- [x] Hành tinh không rõ `disc_year` xếp vào năm cuối cùng thay vì biến mất hẳn
+- [x] Mục "Lịch sử đo đạc" trong thẻ chi tiết; cơ sở dữ liệu còn non thì nói thẳng là chưa
+      có bản hiệu chỉnh nào, chứ không hiện một khung rỗng
+- [x] Phím tắt: dấu cách chạy/dừng, mũi tên trái/phải lùi/tiến một năm
+- [x] Thêm **23 test** (tổng 120): `test_history.py`
+
 #### 🔜 Còn lại của Giai đoạn 3
 
-- [ ] **Time machine** — animate bầu trời "đầy dần" từ 1992 → nay.
-      *Ghi chú:* `disc_year` đã có sẵn trong binary nên bản cơ bản làm được ngay ở client;
-      còn `planet_history` mới là thứ cho phép xem **giá trị đo được tinh chỉnh ra sao**
-      theo thời gian — cái đó NASA không cho truy vấn lại.
 - [ ] **Tìm hành tinh tương đồng** — pgvector trên feature vector chuẩn hóa
       (radius, mass, insolation, teff). Cột `insolation` đã được tính và lưu sẵn ở Giai đoạn 2.
       *Lưu ý:* `postgres:17-alpine` **không có pgvector**; hoặc đổi sang image
@@ -224,6 +258,8 @@ Chi tiết:
 
 - [ ] **Tự động hóa ingest** — hiện vẫn phải chạy tay `python -m app.ingest`.
       Cần cron job / APScheduler / GitHub Actions schedule.
+      *Giờ đã có giá trị cụ thể:* "Lịch sử đo đạc" của cỗ máy thời gian chỉ dài thêm khi
+      có lần chạy thứ hai trở đi. Không chạy đều thì mục đó vĩnh viễn rỗng.
 - [ ] **Auth cho `POST /v1/admin/ingest`** — đang mở toang, chỉ an toàn ở localhost
 - [ ] Đưa `public/textures/` (6,1 MB) + `public/sounds/` lên object storage (S3/R2) + CDN
 - [ ] Push image lên GHCR, preview environment mỗi PR, deploy theo tag
@@ -319,6 +355,14 @@ set API_PROXY_TARGET=http://127.0.0.1:8010 && pnpm dev
 ---
 
 ## 7. Sổ nợ kỹ thuật (chưa xếp lịch)
+
+- **`planet_history` đang rỗng** vì mới có đúng một lần ingest thành công. Endpoint và UI
+  đã chạy đúng (đã kiểm chứng bằng hàng giả rồi xóa), nhưng người dùng chưa thấy gì cho
+  tới khi ingest chạy lần thứ hai — xem mục tự động hóa ở Giai đoạn 4.
+- Cỗ máy thời gian rebuild ma trận instance mỗi khi đổi năm. Với lát cắt tiền tố thì số
+  lượng ghi bằng đúng số hành tinh đang hiện, nhưng ở tốc độ 6× những năm cuối vẫn là
+  ~6.000 lần ghi mỗi bước. Đường thật sự rẻ là animate ở shader bằng một attribute
+  `discoveryYear` cộng một uniform năm hiện tại.
 
 - **`THREE.BufferGeometry.computeBoundingSphere(): radius is NaN`** trong console. Đã
   kiểm chứng binary sạch (0 NaN trên 6.287 hành tinh) → lỗi đến từ `CursorTrail` dùng

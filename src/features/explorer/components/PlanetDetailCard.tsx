@@ -3,6 +3,7 @@ import { X, Globe, Thermometer, Ruler, Weight, Telescope, Star, Orbit, Bookmark 
 import { useExplorerStore } from '../stores/explorerStore'
 import { useAccountStore } from '../stores/accountStore'
 import { HabitabilityGauge } from './HabitabilityGauge'
+import { PlanetRevisions } from './PlanetRevisions'
 import { useTranslation } from 'react-i18next'
 import { translateTerm } from '../lib/astronomyDictionary'
 
@@ -138,6 +139,13 @@ export function PlanetDetailCard() {
           </div>
         )}
       </div>
+
+      {/* Measurement history — the part NASA's own API cannot answer, since it only
+          ever serves the present. Solar System bodies are seeded by us and never
+          revised, so the section would always be empty for them. */}
+      {!planet.id.startsWith('sol-') && (
+        <PlanetRevisions key={planet.id} planetId={planet.id} />
+      )}
 
       {/* Earth Comparison Bar */}
       <div className='border-t border-slate-300 dark:border-white/10 bg-emerald-500/5 p-4'>

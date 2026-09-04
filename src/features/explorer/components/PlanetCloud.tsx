@@ -2,7 +2,7 @@
 import { useRef, useMemo, useEffect } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { useExplorerStore } from '../stores/explorerStore'
+import { useExplorerStore, knownCountByYear } from '../stores/explorerStore'
 import { playSound } from '../services/audio'
 
 /**
@@ -14,6 +14,11 @@ import { playSound } from '../services/audio'
  * - Animation via useRef (GPU mutation), NOT useState (React re-render)
  * - Expected RAM: < 30MB for the entire planet field
  */
+/** How much a planet discovered in the year on screen is enlarged by the time machine. */
+const NEW_DISCOVERY_SCALE = 2.4
+/** Allocated once at module scope — a THREE.Color per instance per frame would churn GC. */
+const NEW_DISCOVERY_TINT = new THREE.Color(1, 1, 1)
+
 // Shared realtime local position store
 export const currentPlanetPositions = new Map<string, THREE.Vector3>()
 export let sharedMeshRef: THREE.InstancedMesh | null = null
@@ -42,6 +47,10 @@ export function PlanetCloud() {
   const setHoveredPlanetId = useExplorerStore((s) => s.setHoveredPlanetId)
   const setSelectedPlanet = useExplorerStore((s) => s.setSelectedPlanet)
   const selectedPlanet = useExplorerStore((s) => s.selectedPlanet)
+  const timelineEnabled = useExplorerStore((s) => s.timelineEnabled)
+  const timelineYear = useExplorerStore((s) => s.timelineYear)
+  const timelineOrder = useExplorerStore((s) => s.timelineOrder)
+  const timelineRange = useExplorerStore((s) => s.timelineRange)
 
   useEffect(() => {
     // We only need one of the visual meshes for tracking rotation in getPlanetWorldPosition
@@ -50,10 +59,28 @@ export function PlanetCloud() {
   }, [])
 
   // Filter out ALL solar system planets from InstancedMesh
-  const displayPlanets = useMemo(
+  const allDisplayPlanets = useMemo(
     () => filteredPlanets.filter((p) => !p.id.startsWith('sol-')),
     [filteredPlanets]
   )
+
+  /**
+   * Time machine: `timelineOrder` is the same set sorted by discovery year, so "what was
+   * known by year Y" is a prefix of it. A binary search plus a slice, rather than a
+   * predicate run over 6,287 planets on every step of the animation.
+   */
+  const { displayPlanets, firstNewIndex } = useMemo(() => {
+    if (!timelineEnabled) {
+      return { displayPlanets: allDisplayPlanets, firstNewIndex: -1 }
+    }
+    const { maxYear } = timelineRange
+    const known = knownCountByYear(timelineOrder, timelineYear, maxYear)
+    return {
+      displayPlanets: timelineOrder.slice(0, known),
+      // Everything discovered in the year on screen sits at the tail of that prefix.
+      firstNewIndex: knownCountByYear(timelineOrder, timelineYear - 1, maxYear),
+    }
+  }, [timelineEnabled, timelineOrder, timelineYear, timelineRange, allDisplayPlanets])
 
   // Reusable objects (NEVER allocate inside useFrame — prevents GC pressure)
   const tempObject = useMemo(() => new THREE.Object3D(), [])
@@ -86,18 +113,29 @@ export function PlanetCloud() {
       const distSq = planet.x * planet.x + planet.y * planet.y + planet.z * planet.z
       const isHighPoly = distSq < 10000 // Distance < 100 units
 
+      // Discovered in the year currently on screen: flared up and washed toward white so
+      // each step of the time machine reads as an event rather than a silent count.
+      const isNew = firstNewIndex >= 0 && i >= firstNewIndex
+      const scale = planet.visualRadius * (isNew ? NEW_DISCOVERY_SCALE : 1)
+
+      if (isNew) {
+        tempColor
+          .setRGB(planet.color[0], planet.color[1], planet.color[2])
+          .lerp(NEW_DISCOVERY_TINT, 0.55)
+      } else {
+        tempColor.setRGB(planet.color[0], planet.color[1], planet.color[2])
+      }
+
       if (isHighPoly && meshRefHigh.current) {
-        tempObject.scale.setScalar(planet.visualRadius)
+        tempObject.scale.setScalar(scale)
         tempObject.updateMatrix()
         meshRefHigh.current.setMatrixAt(highCount, tempObject.matrix)
-        tempColor.setRGB(planet.color[0], planet.color[1], planet.color[2])
         meshRefHigh.current.setColorAt(highCount, tempColor)
         highCount++
       } else if (!isHighPoly && meshRefLow.current) {
-        tempObject.scale.setScalar(planet.visualRadius)
+        tempObject.scale.setScalar(scale)
         tempObject.updateMatrix()
         meshRefLow.current.setMatrixAt(lowCount, tempObject.matrix)
-        tempColor.setRGB(planet.color[0], planet.color[1], planet.color[2])
         meshRefLow.current.setColorAt(lowCount, tempColor)
         lowCount++
       }
@@ -130,7 +168,7 @@ export function PlanetCloud() {
     }
 
     invalidate()
-  }, [displayPlanets, selectedPlanet, tempObject, tempColor, invalidate, maxCount])
+  }, [displayPlanets, firstNewIndex, selectedPlanet, tempObject, tempColor, invalidate, maxCount])
 
   // Real-time orbital motion — GPU matrix mutation, 0 React re-renders!
   const accumulatedTime = useRef(0)

@@ -12,6 +12,7 @@ import { DataTable } from './components/DataTable'
 import { ThemeToggle } from './components/ThemeToggle'
 import { LanguageToggle } from './components/LanguageToggle'
 import { StatsPanel } from './components/StatsPanel'
+import { TimeMachine } from './components/TimeMachine'
 import { AccountMenu } from './components/AccountMenu'
 import { PresenceBar } from './components/PresenceBar'
 import { useAccountStore } from './stores/accountStore'
@@ -35,6 +36,7 @@ export function ExplorerPage() {
   const viewMode = useExplorerStore((s) => s.viewMode)
   const setViewMode = useExplorerStore((s) => s.setViewMode)
   const selectedPlanet = useExplorerStore((s) => s.selectedPlanet)
+  const timelineEnabled = useExplorerStore((s) => s.timelineEnabled)
 
   const planets = useExplorerStore((s) => s.planets)
   const loadSession = useAccountStore((s) => s.loadSession)
@@ -324,9 +326,11 @@ export function ExplorerPage() {
               <StarMap3D />
               <PlanetDetailCard />
               <StatsPanel />
+              <TimeMachine />
 
-              {/* Reset View Button */}
-              {!selectedPlanet && (
+              {/* Reset View Button. Hidden while the time machine is open — both sit at
+                  the bottom centre, and the scrubber is the thing being used there. */}
+              {!selectedPlanet && !timelineEnabled && (
                 <div className='pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 z-20'>
                   <button
                     onClick={() => useExplorerStore.getState().triggerCameraReset()}

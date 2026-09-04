@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from contextlib import asynccontextmanager
 from typing import Any
@@ -12,7 +13,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
-from . import auth, catalog, db, presence, redis_client, routes_account, routes_presence
+from . import (
+    auth,
+    catalog,
+    db,
+    history,
+    presence,
+    redis_client,
+    routes_account,
+    routes_presence,
+)
 from .config import get_settings
 from .ingest import run_ingest
 
@@ -189,6 +199,99 @@ async def planet_detail(planet_id: str) -> dict[str, Any]:
     if row is None:
         raise HTTPException(status_code=404, detail=f"No planet with id {planet_id!r}")
     return dict(row)
+
+
+@app.get("/v1/planets/{planet_id}/history", tags=["catalog"])
+async def planet_history(planet_id: str) -> dict[str, Any]:
+    """How this planet's measurements were revised, run by run.
+
+    This is the half of the time machine that NASA cannot serve. The archive only ever
+    returns the present, so a radius refined last month simply overwrote the old value
+    there. Here every ingest since Phase 2 diffed the incoming row against the stored one
+    and kept whatever it replaced, which makes the revisions replayable.
+    """
+    current = await db.pool().fetchrow("SELECT * FROM planets WHERE id = $1", planet_id)
+    if current is None:
+        raise HTTPException(status_code=404, detail=f"No planet with id {planet_id!r}")
+
+    rows = await db.pool().fetch(
+        """
+        SELECT run_id, changed_at, previous
+          FROM planet_history
+         WHERE planet_id = $1
+         ORDER BY run_id ASC
+        """,
+        planet_id,
+    )
+
+    # asyncpg hands back JSONB as text unless a codec is registered; one json.loads here
+    # is cheaper than a pool-wide codec for the only endpoint that reads the column.
+    parsed = [
+        {
+            "run_id": row["run_id"],
+            "changed_at": row["changed_at"],
+            "previous": json.loads(row["previous"]) if isinstance(row["previous"], str)
+            else row["previous"],
+        }
+        for row in rows
+    ]
+
+    revisions = history.build_revisions(parsed, dict(current))
+    for revision in revisions:
+        revision["changedAt"] = history.to_iso(revision["changedAt"])
+
+    return {
+        "planetId": planet_id,
+        "name": current["pl_name"],
+        "discoveryYear": current["disc_year"],
+        "firstSeenRun": current["first_seen_run"],
+        # Rows recorded minus rows we can describe: an ingest can touch a tracked field
+        # the detail card does not display, and saying "3 revisions" while listing one
+        # would be worse than saying so.
+        "recordedRuns": len(parsed),
+        "revisions": revisions,
+    }
+
+
+@app.get("/v1/timeline", tags=["catalog"])
+async def timeline() -> Response:
+    """Discoveries per year, cumulative, with each year's most habitable find.
+
+    Drives the time machine's scrubber. It changes only when an ingest lands, so it is
+    revalidated rather than recomputed on every scrub.
+    """
+    conn_pool = db.pool()
+    year_rows = await conn_pool.fetch(
+        """
+        SELECT disc_year                                  AS year,
+               count(*)                                   AS count,
+               count(*) FILTER (WHERE is_habitable)       AS habitable,
+               mode() WITHIN GROUP (ORDER BY discoverymethod) AS top_method
+          FROM planets
+         WHERE NOT is_solar_system AND disc_year IS NOT NULL AND disc_year > 0
+         GROUP BY disc_year
+         ORDER BY disc_year
+        """
+    )
+    # DISTINCT ON picks one row per year in a single index-ordered pass, rather than a
+    # window function over the whole table.
+    notable_rows = await conn_pool.fetch(
+        """
+        SELECT DISTINCT ON (disc_year)
+               disc_year AS year, id, pl_name, habitability_score
+          FROM planets
+         WHERE NOT is_solar_system AND disc_year IS NOT NULL AND disc_year > 0
+         ORDER BY disc_year, habitability_score DESC, distance_ly ASC NULLS LAST
+        """
+    )
+
+    payload = history.build_timeline(
+        [dict(r) for r in year_rows], [dict(r) for r in notable_rows]
+    )
+    return JSONResponse(
+        content=payload,
+        headers={"Cache-Control": "public, max-age=300, must-revalidate"},
+    )
 
 
 @app.get("/v1/stats", tags=["catalog"])

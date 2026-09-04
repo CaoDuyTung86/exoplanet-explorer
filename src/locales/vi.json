@@ -147,5 +147,34 @@
     "viewing": "Đang xem {{planet}}",
     "browsing": "Đang xem bản đồ",
     "aloneHere": "Hiện chưa có ai khác trên bản đồ."
+  },
+  "timeMachine": {
+    "open": "Cỗ máy thời gian",
+    "close": "Đóng cỗ máy thời gian",
+    "play": "Chạy",
+    "pause": "Tạm dừng",
+    "restart": "Về đầu",
+    "scrub": "Năm phát hiện",
+    "known": "hành tinh đã biết",
+    "thisYear": "trong năm này",
+    "notable": "Đáng sống nhất",
+    "hint": "Phím cách để chạy/dừng · phím mũi tên lùi hoặc tiến một năm · hành tinh tìm ra đúng năm đang xem sẽ bừng sáng. Bộ lọc vẫn có hiệu lực."
+  },
+  "revisions": {
+    "title": "Lịch sử đo đạc",
+    "empty": "Chưa ghi nhận lần hiệu chỉnh nào. Kho dữ liệu NASA chỉ trả về giá trị hiện tại, nên danh sách này bắt đầu từ lần ingest đầu tiên của chúng tôi và dài thêm mỗi khi một giá trị được tinh chỉnh.",
+    "fields": {
+      "pl_rade": "Bán kính",
+      "pl_bmasse": "Khối lượng",
+      "pl_eqt": "Nhiệt độ cân bằng",
+      "pl_orbper": "Chu kỳ",
+      "pl_orbsmax": "Bán trục lớn",
+      "sy_dist": "Khoảng cách",
+      "st_teff": "Nhiệt độ sao",
+      "st_rad": "Bán kính sao",
+      "st_spectype": "Quang phổ",
+      "disc_year": "Năm tìm ra",
+      "habitability_score": "Điểm sống được"
+    }
   }
 }
