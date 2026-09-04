@@ -4,6 +4,7 @@ import { useExplorerStore } from '../stores/explorerStore'
 import { useAccountStore } from '../stores/accountStore'
 import { HabitabilityGauge } from './HabitabilityGauge'
 import { PlanetRevisions } from './PlanetRevisions'
+import { SimilarPlanets } from './SimilarPlanets'
 import { useTranslation } from 'react-i18next'
 import { translateTerm } from '../lib/astronomyDictionary'
 
@@ -139,6 +140,11 @@ export function PlanetDetailCard() {
           </div>
         )}
       </div>
+
+      {/* Nearest worlds in feature space. Deliberately not hidden for the Solar System:
+          "which exoplanet is most like Earth" is the question the reference frame exists
+          to answer, and this is where it gets answered. */}
+      <SimilarPlanets key={`similar-${planet.id}`} planetId={planet.id} />
 
       {/* Measurement history — the part NASA's own API cannot answer, since it only
           ever serves the present. Solar System bodies are seeded by us and never

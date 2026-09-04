@@ -36,6 +36,11 @@ physical properties, and compare candidates against our own Solar System.
 - **Realtime presence** — a WebSocket shows who else is on the map and which planet each
   visitor is looking at; click one to fly there. Redis pub/sub carries the events between
   API processes, and a TTL plus heartbeat handles the tab that was force-quit.
+- **Most similar worlds** — every planet is reduced to four standardised numbers (radius,
+  mass, stellar flux, star temperature) and neighbours are found with a GiST k-NN scan
+  over a Postgres `cube`, in about a millisecond. Dimensions the archive never measured
+  are imputed to the population mean and *labelled as such*, so an estimate is never
+  shown as an observation. Ask it about Earth and it answers Kepler-452 b.
 - **English / Vietnamese** — including a dictionary for astronomical terms
   (*Radial Velocity* → *Vận tốc xuyên tâm*).
 
@@ -52,7 +57,7 @@ physical properties, and compare candidates against our own Solar System.
 | i18n | i18next / react-i18next |
 | PWA | vite-plugin-pwa |
 | **API** | **Python 3.13, FastAPI, asyncpg, numpy, argon2** |
-| **Database** | **Postgres 17 (Docker Compose)** |
+| **Database** | **Postgres 17 (Docker Compose), `cube` for k-NN** |
 | **Realtime** | **WebSocket + Redis 8 pub/sub** |
 | Data source | [NASA Exoplanet Archive](https://exoplanetarchive.ipac.caltech.edu/) TAP API (`pscomppars`) |
 

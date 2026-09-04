@@ -13,14 +13,14 @@ import asyncio
 import json
 import logging
 import time
-from typing import Any
+from typing import Any, Iterable, Sequence
 
 import httpx
 
-from . import db
+from . import db, similarity
 from .config import get_settings
 from .solar_system import SOLAR_SYSTEM
-from .transform import derive, slugify
+from .transform import Derived, derive, slugify
 
 log = logging.getLogger(__name__)
 
@@ -90,6 +90,23 @@ ON CONFLICT (id) DO UPDATE SET
     updated_at = now()
 """
 
+# asyncpg has no codec for the contrib `cube` type, so the vector travels as text and
+# Postgres parses it. One cast beats registering a codec on every pooled connection.
+FEATURES_SQL = """
+INSERT INTO planet_features (planet_id, feature_vec, feature_mask, run_id)
+VALUES ($1, $2::text::cube, $3, $4)
+ON CONFLICT (planet_id) DO UPDATE SET
+    feature_vec  = EXCLUDED.feature_vec,
+    feature_mask = EXCLUDED.feature_mask,
+    run_id       = EXCLUDED.run_id,
+    updated_at   = now()
+"""
+
+FEATURE_STATS_SQL = """
+INSERT INTO feature_stats (run_id, dimension, feature, mean, stddev, measured_count)
+VALUES ($1, $2, $3, $4, $5, $6)
+"""
+
 
 async def fetch_from_nasa() -> list[dict[str, Any]]:
     """Pull the catalog from the TAP service.
@@ -113,8 +130,14 @@ async def fetch_from_nasa() -> list[dict[str, Any]]:
     return rows
 
 
-def _row_to_record(row: dict[str, Any], index: int, run_id: int) -> tuple[Any, ...]:
-    d = derive(row, index)
+def _row_to_record(row: dict[str, Any], d: Derived, run_id: int) -> tuple[Any, ...]:
+    """One planet as a parameter tuple for UPSERT_SQL.
+
+    `derive` has already run for this row. It used to be called from here, but the
+    feature vector needs population statistics over the whole batch, which cannot be
+    known while the first row is still being processed — so the ingest now derives every
+    row first, computes the statistics, and only then builds records.
+    """
     return (
         slugify(row["pl_name"]),
         row["pl_name"],
@@ -145,6 +168,27 @@ def _solar_record(body: dict[str, Any], run_id: int) -> tuple[Any, ...]:
     )
 
 
+def _feature_records(
+    rows: Iterable[dict[str, Any]],
+    stats: Sequence[similarity.FeatureStat],
+    run_id: int,
+) -> list[tuple[Any, ...]]:
+    """Parameter tuples for FEATURES_SQL, skipping rows that cannot be placed.
+
+    A planet with one measured dimension out of four would sit at the population mean on
+    the other three, and "nearest" would then mean little more than "also average". Those
+    rows get no entry at all, so the similarity index cannot return them and cannot be
+    asked to rank from them.
+    """
+    records: list[tuple[Any, ...]] = []
+    for row in rows:
+        coords, mask = similarity.feature_vector(row, stats)
+        if coords is None:
+            continue
+        records.append((row["id"], similarity.cube_literal(coords), mask, run_id))
+    return records
+
+
 async def run_ingest() -> dict[str, Any]:
     """Fetch, derive, diff and upsert. Returns a summary of the run."""
     started = time.perf_counter()
@@ -158,8 +202,26 @@ async def run_ingest() -> dict[str, Any]:
     try:
         raw_rows = await fetch_from_nasa()
 
-        records = [_row_to_record(row, i, run_id) for i, row in enumerate(raw_rows)]
+        derived = [derive(row, index) for index, row in enumerate(raw_rows)]
+        # Fold the id and the derived insolation into the row. The feature vector needs
+        # both, and reading insolation from the same place the column is written from
+        # means the vector and the stored value cannot drift apart.
+        rows = [
+            {**row, "id": slugify(row["pl_name"]), "insolation": d.insolation}
+            for row, d in zip(raw_rows, derived)
+        ]
+
+        # Standardised over the exoplanets only. The nine Solar System rows are seeded by
+        # us rather than observed by anyone, and nine hand-authored bodies have no
+        # business shifting the mean the whole catalog is measured against — they are the
+        # reference frame, not part of the population being described.
+        stats = similarity.build_stats(rows)
+
+        records = [_row_to_record(row, d, run_id) for row, d in zip(rows, derived)]
         records.extend(_solar_record(body, run_id) for body in SOLAR_SYSTEM)
+
+        feature_records = _feature_records(rows, stats, run_id)
+        feature_records.extend(_feature_records(SOLAR_SYSTEM, stats, run_id))
 
         async with conn_pool.acquire() as conn:
             # Snapshot the tracked fields before the upsert overwrites them.
@@ -182,6 +244,19 @@ async def run_ingest() -> dict[str, Any]:
 
             async with conn.transaction():
                 await conn.executemany(UPSERT_SQL, records)
+                # After the planets: `planet_features.planet_id` is a foreign key, so a
+                # brand-new planet has to exist before its vector can point at it.
+                await conn.executemany(FEATURES_SQL, feature_records)
+                # Stats are kept per run so a stored vector can be traced back to the
+                # population it was normalised against — without them the numbers in
+                # `feature_vec` are unreadable a year from now.
+                await conn.executemany(
+                    FEATURE_STATS_SQL,
+                    [
+                        (run_id, s.dimension, s.feature, s.mean, s.stddev, s.measured_count)
+                        for s in stats
+                    ],
+                )
                 if changed:
                     await conn.executemany(
                         "INSERT INTO planet_history (planet_id, run_id, previous) "
@@ -205,6 +280,7 @@ async def run_ingest() -> dict[str, Any]:
             "run_id": run_id,
             "rows_fetched": len(raw_rows),
             "rows_upserted": len(records),
+            "rows_vectorised": len(feature_records),
             "rows_changed": len(changed),
             "duration_ms": duration_ms,
         }

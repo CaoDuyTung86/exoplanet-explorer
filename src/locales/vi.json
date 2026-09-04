@@ -176,5 +176,19 @@
       "disc_year": "Năm tìm ra",
       "habitability_score": "Điểm sống được"
     }
+  },
+  "similar": {
+    "title": "Thế giới tương đồng nhất",
+    "basis": "Xếp hạng theo bán kính, khối lượng, bức xạ sao nhận được và nhiệt độ sao mẹ, mỗi đại lượng được đo trên độ phân tán của cả kho dữ liệu.",
+    "empty": "Quá ít số liệu đo được để đem hành tinh này ra so với kho dữ liệu.",
+    "flyTo": "Bay tới {{name}}",
+    "fields": {
+      "pl_rade": "bán kính",
+      "pl_bmasse": "khối lượng",
+      "insolation": "bức xạ",
+      "st_teff": "nhiệt độ sao"
+    },
+    "filteredOut": "bị lọc bỏ",
+    "hiddenByFilters": "{{name}} đang bị bộ lọc hiện tại ẩn đi"
   }
 }

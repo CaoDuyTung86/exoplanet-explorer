@@ -49,6 +49,7 @@ Repo: `github.com/CaoDuyTung86/exoplanet-explorer` · License MIT
                   │  /v1/auth/*        cookie phiên (opaque token) │
                   │  /v1/me/*          bookmark · bộ lọc đã lưu    │
                   │  /v1/ws/presence   WebSocket                   │
+                  │  /v1/planets/{id}/similar  k-NN trên cube      │
                   │  ETag · Cache-Control · gzip                   │
                   └────────────────────────────────────────────────┘
                                 ▼
@@ -91,6 +92,9 @@ phách) → cả hai chết → 7 hành tinh curated (banner hổ phách). Khôn
 | `server/app/history.py` | Tái dựng lịch sử đo đạc + tổng hợp mốc thời gian (thuần, không I/O) |
 | `src/features/explorer/components/TimeMachine.tsx` | Thanh tua năm, biểu đồ cột, phát lại |
 | `src/features/explorer/components/PlanetRevisions.tsx` | Danh sách lần hiệu chỉnh trong thẻ chi tiết |
+| `server/app/similarity.py` | Vector đặc trưng 4 chiều: log, chuẩn hóa, mặt nạ "đo thật" (thuần, không I/O) |
+| `server/migrations/003_similarity.sql` | `cube` + `planet_features` + `feature_stats` |
+| `src/features/explorer/components/SimilarPlanets.tsx` | Danh sách thế giới tương đồng trong thẻ chi tiết |
 | `docker-compose.yml` | Postgres · Redis (+ API qua `--profile api`) |
 
 ---
@@ -242,13 +246,50 @@ Chi tiết:
 - [x] Phím tắt: dấu cách chạy/dừng, mũi tên trái/phải lùi/tiến một năm
 - [x] Thêm **23 test** (tổng 120): `test_history.py`
 
+##### Tìm hành tinh tương đồng (2026-09-04)
+
+- [x] `GET /v1/planets/{id}/similar` — **k-NN trên `cube`, không phải pgvector.**
+      `pg_available_extensions` xác nhận `postgres:17-alpine` có sẵn `cube` (1.5), nên
+      không phải đổi base image lẫn khởi tạo lại volume dữ liệu chỉ để có 4 chiều.
+      pgvector đáng giá ở 768 chiều với HNSW; ở 4 chiều nó là thủ tục thừa.
+- [x] **Vector 4 chiều:** bán kính, khối lượng, insolation, nhiệt độ sao mẹ. Cố tình
+      **không** đưa chu kỳ quỹ đạo vào — insolation vốn đã suy ra từ quỹ đạo và ngôi sao,
+      thêm chu kỳ là đếm cùng một sự thật hai lần.
+- [x] **log10 rồi mới chuẩn hóa.** Ba đại lượng đầu là tỉ số so với Trái Đất và trải dài
+      nhiều bậc độ lớn nên bước có ý nghĩa là bước nhân; nhiệt độ sao vốn tuyến tính nên
+      giữ nguyên. Không chia cho độ lệch chuẩn thì vector chỉ còn là nhiệt độ sao đội mũ.
+- [x] **Bảng riêng `planet_features`, không phải cột trong `planets`.** `cube` là kiểu
+      contrib, asyncpg không có codec cho nó — thêm một cột như vậy là mọi `SELECT *` trên
+      `planets` ngừng giải mã được. Tách ra cũng nói đúng bản chất: đây là cấu trúc chỉ
+      mục suy ra từ hàng dữ liệu, không phải thuộc tính của hành tinh.
+- [x] **Giá trị thiếu nằm ở trung bình quần thể** — lựa chọn trung tính, không bịa ra
+      giống nhau lẫn khác nhau. Nhưng `feature_mask` ghi lại chiều nào *đo thật*, API trả
+      kèm, và `ratios` chỉ so hai con số cùng đo được. Số nội suy không bao giờ được trưng
+      ra như số đo.
+- [x] Hàng xóm bắt buộc phải đo được **mọi chiều mà hành tinh đang xem đo được**
+      (`feature_mask & $mask = $mask`), nếu không một hành tinh chưa từng cân khối lượng
+      sẽ nằm ở trung bình trên trục đó và trở thành "rất giống" mọi thứ tầm thường.
+- [x] Hành tinh đo được **dưới 2/4 chiều** thì không có hàng trong `planet_features` —
+      "không có trong bảng" và "không xếp hạng được" là cùng một sự thật thay vì hai.
+- [x] Chỉ mục GiST: `EXPLAIN ANALYZE` xác nhận `Index Scan using planet_features_vec_idx`
+      với `Order By: feature_vec <-> ...`, **1,2 ms** cho 8 hàng xóm gần nhất.
+- [x] `feature_stats` lưu mean/stddev từng chiều **theo từng lần ingest** — không có nó
+      thì một năm sau các con số trong `feature_vec` là chữ tượng hình.
+- [x] Hệ Mặt Trời **không** tham gia tính thống kê (9 hàng do ta tự gieo, không phải quan
+      trắc) nhưng **có** trong kết quả: "ngoại hành tinh nào giống Trái Đất nhất" là câu
+      hỏi mà cái khung tham chiếu này sinh ra để trả lời. Kiểm chứng: Kepler-452 b, tau
+      Cet h, Kepler-1126 c nằm trong top 8 của Trái Đất.
+- [x] `insolation` của Hệ Mặt Trời được tính lại từ sao + quỹ đạo khi cột lưu trống, nếu
+      không Trái Đất sẽ bị nội suy đúng cái đại lượng quan trọng nhất của nó
+- [x] Thẻ chi tiết: thanh %, nhãn tỉ số ("1,05× bán kính") — phần người đọc kiểm chứng
+      được — và bấm để bay tới. Hàng xóm đang bị bộ lọc ẩn thì gắn nhãn *bị lọc bỏ* thay
+      vì lặng lẽ đưa máy quay tới chỗ trống
+- [x] Thêm **19 test** (tổng 139): `test_similarity.py`
+
 #### 🔜 Còn lại của Giai đoạn 3
 
-- [ ] **Tìm hành tinh tương đồng** — pgvector trên feature vector chuẩn hóa
-      (radius, mass, insolation, teff). Cột `insolation` đã được tính và lưu sẵn ở Giai đoạn 2.
-      *Lưu ý:* `postgres:17-alpine` **không có pgvector**; hoặc đổi sang image
-      `pgvector/pgvector:pg17`, hoặc dùng extension `cube` có sẵn cho k-NN.
-- [ ] Search server-side bằng `pg_trgm`; phân trang cho DataTable
+- [ ] Search server-side bằng `pg_trgm` (đã có sẵn trong image, kiểm tra cùng lúc với
+      `cube`); phân trang cho DataTable
 - [ ] Permalink chia sẻ: filter + vị trí camera + hành tinh đang chọn → short URL
       (id đã là slug ổn định nên link sẽ không mục)
 - [ ] OG image render phía server → link share hiện "hộ chiếu hành tinh"
@@ -309,6 +350,11 @@ Chi tiết:
 | 2026-09-04 | Mỗi socket một `asyncio.Queue` có giới hạn, đầy thì **bỏ sự kiện** | Một client đọc chậm không được phép chặn broadcast của cả phòng. Mất một update là hỏng đúng cách: snapshot lần sau sẽ chữa lại cho client đó |
 | 2026-09-04 | `saved_filters.filters` là **JSONB**, không phải 10 cột có kiểu | Hình dạng bộ lọc là chuyện của client và thay đổi mỗi lần thêm một thanh trượt. Server chỉ lưu và trả lại nguyên vẹn |
 | 2026-09-04 | Áp preset là `{...DEFAULT_FILTERS, ...preset}` chứ không merge vào bộ lọc hiện tại | Nếu merge, một preset lưu 3 thanh trượt sẽ âm thầm kế thừa 7 thanh còn lại từ màn hình lúc mở — tức là không tái lập được |
+| 2026-09-04 | **`cube` thay vì pgvector** cho k-NN | Roadmap ghi pgvector, nhưng `cube` đã có sẵn trong `postgres:17-alpine` và có đúng toán tử GiST k-NN cần dùng. Đổi image chỉ để lấy 4 chiều là phải khởi tạo lại volume dữ liệu, đổi lấy một thứ pgvector chỉ hơn hẳn ở quy mô 768 chiều |
+| 2026-09-04 | Vector nằm ở **bảng riêng**, không phải cột trong `planets` | asyncpg không giải mã được kiểu contrib `cube`; thêm cột đó là mọi `SELECT * FROM planets` hỏng, mà `/v1/planets/{id}` và endpoint lịch sử đều đang dùng. Tách ra còn nói đúng bản chất: chỉ mục suy ra từ dữ liệu, không phải thuộc tính |
+| 2026-09-04 | Chiều thiếu **nội suy về trung bình**, kèm bitmask "đo thật" | Bỏ hẳn hành tinh thiếu số liệu thì mất ~12% kho dữ liệu. Nội suy về trung bình là lựa chọn trung tính, nhưng con số nội suy không được phép trưng ra như số đo — nên mặt nạ đi kèm ra tận API và tỉ số chỉ tính khi cả hai bên cùng đo được |
+| 2026-09-04 | Hệ Mặt Trời **không tính vào thống kê chuẩn hóa** nhưng **có trong kết quả** | 9 hàng do ta tự gieo không nên dịch chuyển cái trung bình mà cả kho dữ liệu được đo trên đó. Nhưng loại chúng khỏi kết quả thì mất luôn câu hỏi hay nhất mà khung tham chiếu này sinh ra để trả lời |
+| 2026-09-04 | Phần trăm "độ giống" là **hàm Gauss của khoảng cách**, và khoảng cách vẫn trả kèm | Người đọc cần một thanh để so hàng nào gần hơn, nhưng con số đó không phải xác suất. Trả kèm khoảng cách thô để lúc nào cũng đối chiếu được thứ hạng với con số sinh ra nó |
 
 ---
 
@@ -356,9 +402,10 @@ set API_PROXY_TARGET=http://127.0.0.1:8010 && pnpm dev
 
 ## 7. Sổ nợ kỹ thuật (chưa xếp lịch)
 
-- **`planet_history` đang rỗng** vì mới có đúng một lần ingest thành công. Endpoint và UI
-  đã chạy đúng (đã kiểm chứng bằng hàng giả rồi xóa), nhưng người dùng chưa thấy gì cho
-  tới khi ingest chạy lần thứ hai — xem mục tự động hóa ở Giai đoạn 4.
+- **`planet_history` giờ đã có dữ liệu thật:** lần ingest thứ hai (2026-09-04, run 2) ghi
+  **26 hành tinh** được NASA hiệu chỉnh. Nhưng 26/6.292 nghĩa là gần như hành tinh nào mở
+  ra cũng vẫn thấy "chưa ghi nhận lần hiệu chỉnh nào" — mục này chỉ dày lên theo số lần
+  ingest, nên vẫn phụ thuộc việc tự động hóa ở Giai đoạn 4.
 - Cỗ máy thời gian rebuild ma trận instance mỗi khi đổi năm. Với lát cắt tiền tố thì số
   lượng ghi bằng đúng số hành tinh đang hiện, nhưng ở tốc độ 6× những năm cuối vẫn là
   ~6.000 lần ghi mỗi bước. Đường thật sự rẻ là animate ở shader bằng một attribute

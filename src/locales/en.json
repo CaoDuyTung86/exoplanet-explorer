@@ -176,5 +176,19 @@
       "disc_year": "Disc. year",
       "habitability_score": "Habitability"
     }
+  },
+  "similar": {
+    "title": "Most similar worlds",
+    "basis": "Ranked by radius, mass, stellar flux and star temperature, each measured against the spread of the whole catalog.",
+    "empty": "Too few measurements to compare this one against the catalog.",
+    "flyTo": "Fly to {{name}}",
+    "fields": {
+      "pl_rade": "radius",
+      "pl_bmasse": "mass",
+      "insolation": "flux",
+      "st_teff": "star temp"
+    },
+    "filteredOut": "filtered out",
+    "hiddenByFilters": "{{name}} is hidden by your current filters"
   }
 }

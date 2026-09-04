@@ -36,6 +36,12 @@ theo thông số vật lý, và so sánh với chính Hệ Mặt Trời của ch
 - **Presence thời gian thực** — WebSocket cho biết ai đang ở trên bản đồ và đang xem hành
   tinh nào; bấm vào một người là bay tới đó. Redis pub/sub chuyển sự kiện giữa các tiến
   trình API, còn TTL kèm heartbeat xử lý trường hợp tab bị tắt đột ngột.
+- **Thế giới tương đồng nhất** — mỗi hành tinh được rút gọn thành bốn con số đã chuẩn hóa
+  (bán kính, khối lượng, bức xạ nhận được, nhiệt độ sao mẹ) và hàng xóm gần nhất được tìm
+  bằng chỉ mục GiST k-NN trên kiểu `cube` của Postgres, mất khoảng một mili-giây. Chiều
+  nào kho dữ liệu chưa từng đo thì nội suy về trung bình quần thể và **ghi rõ là nội
+  suy**, để số ước lượng không bao giờ bị trưng ra như số đo. Hỏi nó về Trái Đất, nó trả
+  lời Kepler-452 b.
 - **Anh / Việt** — có từ điển riêng cho thuật ngữ thiên văn
   (*Radial Velocity* → *Vận tốc xuyên tâm*).
 
@@ -52,7 +58,7 @@ theo thông số vật lý, và so sánh với chính Hệ Mặt Trời của ch
 | Đa ngôn ngữ | i18next / react-i18next |
 | PWA | vite-plugin-pwa |
 | **API** | **Python 3.13, FastAPI, asyncpg, numpy, argon2** |
-| **Database** | **Postgres 17 (Docker Compose)** |
+| **Database** | **Postgres 17 (Docker Compose), extension `cube` cho k-NN** |
 | **Thời gian thực** | **WebSocket + Redis 8 pub/sub** |
 | Nguồn dữ liệu | [NASA Exoplanet Archive](https://exoplanetarchive.ipac.caltech.edu/) TAP API (`pscomppars`) |
 

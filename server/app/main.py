@@ -22,6 +22,7 @@ from . import (
     redis_client,
     routes_account,
     routes_presence,
+    similarity,
 )
 from .config import get_settings
 from .ingest import run_ingest
@@ -250,6 +251,127 @@ async def planet_history(planet_id: str) -> dict[str, Any]:
         # would be worse than saying so.
         "recordedRuns": len(parsed),
         "revisions": revisions,
+    }
+
+
+# Columns a neighbour card shows, plus the ones `field_ratios` needs to compare against.
+# `insolation` is recomputed from st_rad/st_teff/pl_orbsmax when the stored column is
+# empty, which is why those three come along.
+_SIMILAR_COLUMNS = """
+    p.id, p.pl_name, p.hostname, p.distance_ly, p.habitability_score, p.is_habitable,
+    p.size_category, p.disc_year, p.discoverymethod, p.st_spectype, p.is_solar_system,
+    p.pl_rade, p.pl_bmasse, p.pl_eqt, p.insolation, p.st_teff, p.st_rad, p.pl_orbsmax,
+    f.feature_mask
+"""
+
+SIMILAR_SQL = f"""
+SELECT {_SIMILAR_COLUMNS},
+       f.feature_vec <-> $1::text::cube AS distance
+  FROM planet_features f
+  JOIN planets p ON p.id = f.planet_id
+ WHERE f.planet_id <> $2
+   -- Every dimension the subject measured, the neighbour measured too. Without this a
+   -- planet whose mass was never measured sits at the population mean on that axis and
+   -- turns up as a close match to anything average — an artefact of the imputation
+   -- rather than a resemblance.
+   AND (f.feature_mask & $3::smallint) = $3::smallint
+ ORDER BY f.feature_vec <-> $1::text::cube
+ LIMIT $4
+"""
+
+SUBJECT_SQL = f"""
+SELECT {_SIMILAR_COLUMNS},
+       -- ::text because asyncpg cannot decode the contrib `cube` type. The literal goes
+       -- straight back out as the query point, so it is never parsed on this side.
+       f.feature_vec::text AS feature_vec
+  FROM planets p
+  LEFT JOIN planet_features f ON f.planet_id = p.id
+ WHERE p.id = $1
+"""
+
+
+@app.get("/v1/planets/{planet_id}/similar", tags=["catalog"])
+async def similar_planets(planet_id: str, limit: int = 8) -> dict[str, Any]:
+    """Nearest neighbours of this planet in standardised feature space.
+
+    Radius, mass, insolation and host-star temperature, each log-scaled where it spans
+    orders of magnitude and then divided by its own spread, so no single quantity
+    dominates the comparison. See `app.similarity` for why those four and why that
+    transform.
+
+    The ranking is a GiST k-NN scan over a `cube` column — Postgres walks straight to the
+    nearest rows instead of sorting 6,287 of them per request.
+    """
+    limit = max(1, min(24, limit))
+
+    subject = await db.pool().fetchrow(SUBJECT_SQL, planet_id)
+    if subject is None:
+        raise HTTPException(status_code=404, detail=f"No planet with id {planet_id!r}")
+
+    subject_dict = dict(subject)
+    subject_mask = subject["feature_mask"] or 0
+
+    if subject["feature_vec"] is None:
+        # Too little was measured to place this planet in the space at all. Saying so is
+        # the answer; returning whatever happens to sit near the origin would be noise
+        # dressed up as a result.
+        return {
+            "planetId": planet_id,
+            "name": subject["pl_name"],
+            "available": False,
+            "dimensions": list(similarity.FEATURE_NAMES),
+            # No stored mask to read — there is no `planet_features` row — so the handful
+            # of dimensions this planet does have are counted straight off the row.
+            "measuredFields": [
+                name
+                for name in similarity.FEATURE_NAMES
+                if similarity.raw_value(subject_dict, name) is not None
+            ],
+            "neighbours": [],
+        }
+
+    rows = await db.pool().fetch(
+        SIMILAR_SQL, subject["feature_vec"], planet_id, subject_mask, limit
+    )
+
+    neighbours = []
+    for row in rows:
+        row_dict = dict(row)
+        distance = float(row["distance"])
+        neighbours.append(
+            {
+                "id": row["id"],
+                "name": row["pl_name"],
+                "hostname": row["hostname"],
+                "distanceLy": row["distance_ly"],
+                "habitabilityScore": row["habitability_score"],
+                "sizeCategory": row["size_category"],
+                "discYear": row["disc_year"],
+                "isSolarSystem": row["is_solar_system"],
+                # The distance is the ranking; the percentage is only a reading of it.
+                "distance": distance,
+                "match": similarity.similarity_percent(distance),
+                "measuredFields": similarity.measured_fields(row["feature_mask"] or 0),
+                "values": {
+                    name: similarity.raw_value(row_dict, name)
+                    for name in similarity.FEATURE_NAMES
+                },
+                # "1.04x the radius" is checkable in a way a standardised distance is not.
+                "ratios": similarity.field_ratios(subject_dict, row_dict),
+            }
+        )
+
+    return {
+        "planetId": planet_id,
+        "name": subject["pl_name"],
+        "available": True,
+        "dimensions": list(similarity.FEATURE_NAMES),
+        "measuredFields": similarity.measured_fields(subject_mask),
+        "values": {
+            name: similarity.raw_value(subject_dict, name)
+            for name in similarity.FEATURE_NAMES
+        },
+        "neighbours": neighbours,
     }
 
 

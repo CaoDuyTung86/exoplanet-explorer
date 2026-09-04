@@ -65,6 +65,9 @@ docker compose --profile api up -d --build
 | `GET /v1/catalog.bin` | Positions, colours and numeric columns as one `ArrayBuffer` |
 | `GET /v1/catalog/meta` | Names and dictionary-encoded string columns, same row order |
 | `GET /v1/planets/{id}` | Full record for one planet |
+| `GET /v1/planets/{id}/history` | How this planet's measurements were revised, run by run |
+| `GET /v1/planets/{id}/similar` | Nearest neighbours in feature space, `?limit=` 1-24 |
+| `GET /v1/timeline` | Discoveries per year, cumulative, with each year's most habitable find |
 | `GET /v1/stats` | Aggregates for the stats panel, computed in SQL |
 | `POST /v1/admin/ingest` | Trigger an ingest. **Needs auth before this is public.** |
 
@@ -115,6 +118,44 @@ Visitors never send their own display name: anonymous ones get a callsign derive
 their peer id, and signed-in ones are named from the session cookie that rode along with
 the WebSocket handshake. Nobody can sign the presence list as somebody else.
 
+## Similar planets
+
+`GET /v1/planets/{id}/similar` ranks the catalog by Euclidean distance in a four
+dimensional space: radius, mass, insolation and host-star temperature. Orbital period is
+deliberately absent — insolation is already derived from the orbit and the star, so adding
+the period would count the same fact twice.
+
+The first three span orders of magnitude, so they are compared multiplicatively via log10;
+then every dimension is divided by its own standard deviation, computed over the catalog
+during ingest and stored per run in `feature_stats`. Skip that and the comparison is
+stellar temperature and nothing else, since a few thousand kelvin swamps a couple of Earth
+radii.
+
+The vectors live in `planet_features`, not in a column on `planets`. `cube` is a contrib
+type with no asyncpg codec, so a column of it would break every `SELECT *` over `planets` —
+and it is honest about what the vector is: an index structure derived from the row, not a
+property of the planet. It is `cube` rather than pgvector because `postgres:17-alpine`
+already ships it and it has the GiST k-NN operator this needs; pgvector earns its keep at
+768 dimensions, not at four. `EXPLAIN ANALYZE` confirms an index scan ordered by `<->`,
+about 1.2 ms for eight neighbours.
+
+About one planet in eight is missing insolation, so an unmeasured dimension is imputed to
+the population mean — the neutral choice, inventing neither a resemblance nor a difference.
+What must not happen is an imputed number being read as a measurement, so:
+
+* `feature_mask` records which dimensions are real, and the API returns it per planet.
+* A neighbour must have measured everything the subject measured
+  (`feature_mask & $mask = $mask`), or a planet whose mass was never determined would sit
+  at the mean on that axis and rank as a close match to anything average.
+* A planet with fewer than two measured dimensions gets no row at all, so "absent from the
+  table" and "cannot be ranked" are one fact rather than two that can disagree.
+* `ratios` compares only pairs where both planets measured the value.
+
+The nine Solar System bodies are excluded from the standardisation statistics — they are
+seeded by us, not observed, and should not shift the mean the catalog is measured against —
+but they are included in the results. "Which exoplanet is most like Earth" is the question
+the reference frame exists to answer.
+
 ## The binary format
 
 `GET /v1/catalog.bin` returns a single buffer. The 56-byte header carries a magic number,
@@ -151,6 +192,8 @@ server/
 │   ├── ingest.py        NASA TAP -> derive -> diff -> upsert
 │   ├── transform.py     Habitability, categories, colours, 3D projection
 │   ├── catalog.py       Binary encoder and metadata builder
+│   ├── history.py       Measurement revisions and the discovery timeline (no I/O)
+│   ├── similarity.py    Feature vectors: log, standardise, measured-value mask (no I/O)
 │   ├── solar_system.py  The nine seeded Solar System bodies
 │   ├── db.py            asyncpg pool and migration runner
 │   ├── config.py        Environment-backed settings
