@@ -67,6 +67,7 @@ docker compose --profile api up -d --build
 | `GET /v1/planets/{id}` | Full record for one planet |
 | `GET /v1/planets/{id}/history` | How this planet's measurements were revised, run by run |
 | `GET /v1/planets/{id}/similar` | Nearest neighbours in feature space, `?limit=` 1-24 |
+| `GET /v1/search` | Find a planet by name, punctuation- and typo-tolerant, `?q=` `?limit=` 1-25 |
 | `GET /v1/timeline` | Discoveries per year, cumulative, with each year's most habitable find |
 | `GET /v1/stats` | Aggregates for the stats panel, computed in SQL |
 | `POST /v1/admin/ingest` | Trigger an ingest. **Needs auth before this is public.** |
@@ -156,6 +157,46 @@ seeded by us, not observed, and should not shift the mean the catalog is measure
 but they are included in the results. "Which exoplanet is most like Earth" is the question
 the reference frame exists to answer.
 
+## Search
+
+`GET /v1/search?q=` is not here to do substring matching. The client already holds all
+~6,300 names and can filter them in a millisecond. What it cannot do is forgive the input:
+`kepler 452b`, `KEPLER-452 B` and `keplr-452 b` are one intention, and only the first of
+those matches `pl_name.includes(q)`.
+
+Two different problems hide in that, solved in two different places.
+
+**Punctuation is deterministic.** `name_key` and `host_key` are generated columns holding
+the name folded to lowercase alphanumerics, so `Kepler-452 b` is stored as `kepler452b`
+and the query is folded the same way before anything approximate happens. Generated rather
+than written by ingest: the value is a function of the row, and a column Postgres maintains
+cannot drift out of sync with the name the way application code eventually does.
+
+**Typos are not**, which is what `pg_trgm` is for. One GIN index over trigrams serves both
+arms of the query — the `%` similarity operator and `LIKE '%...%'`. Both are needed: `%`
+scores a short query against a long name too low to pass its threshold, and `LIKE` cannot
+see past a transposed letter.
+
+Ranking is two-stage. SQL narrows to at most 400 candidates, pre-ranked in the same tiers
+the final ranking uses, so the true top of the list is inside the pool. `app/search.py`
+then orders them with a pure function — the part most able to be quietly wrong, and so the
+part worth testing without a database:
+
+* Exact `1.0` · prefix `0.80-0.95` · contained `0.60-0.75` · trigram below `0.55`.
+* Inside a literal band, coverage decides: for `toi700`, `TOI-700 d` outranks `TOI-7001 b`.
+* **A fuzzy match can never outrank a literal one.** The trigram ceiling sits below the
+  substring floor, so forgiving a typo adds results at the bottom of the list; it never
+  reorders the top.
+* A host-star match counts, discounted by 0.05 — typing `trappist1` is how you ask for that
+  system's planets, but a planet actually named that belongs first.
+* Ties break by distance, then name, so the same search returns the same order rather than
+  whatever the index happened to yield.
+* Under two characters is not a query. It returns nothing rather than an arbitrary slice of
+  the catalog.
+
+The fold that makes matching punctuation-blind also makes it injection-proof: a normalised
+query is alphanumerics only, so `%` and `_` never reach the `LIKE` pattern.
+
 ## The binary format
 
 `GET /v1/catalog.bin` returns a single buffer. The 56-byte header carries a magic number,
@@ -194,6 +235,7 @@ server/
 │   ├── catalog.py       Binary encoder and metadata builder
 │   ├── history.py       Measurement revisions and the discovery timeline (no I/O)
 │   ├── similarity.py    Feature vectors: log, standardise, measured-value mask (no I/O)
+│   ├── search.py        Query fold and result ranking for /v1/search (no I/O)
 │   ├── solar_system.py  The nine seeded Solar System bodies
 │   ├── db.py            asyncpg pool and migration runner
 │   ├── config.py        Environment-backed settings

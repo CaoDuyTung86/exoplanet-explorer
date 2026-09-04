@@ -50,6 +50,7 @@ Repo: `github.com/CaoDuyTung86/exoplanet-explorer` · License MIT
                   │  /v1/me/*          bookmark · bộ lọc đã lưu    │
                   │  /v1/ws/presence   WebSocket                   │
                   │  /v1/planets/{id}/similar  k-NN trên cube      │
+                  │  /v1/search        trigram, tha lỗi gõ         │
                   │  ETag · Cache-Control · gzip                   │
                   └────────────────────────────────────────────────┘
                                 ▼
@@ -95,6 +96,10 @@ phách) → cả hai chết → 7 hành tinh curated (banner hổ phách). Khôn
 | `server/app/similarity.py` | Vector đặc trưng 4 chiều: log, chuẩn hóa, mặt nạ "đo thật" (thuần, không I/O) |
 | `server/migrations/003_similarity.sql` | `cube` + `planet_features` + `feature_stats` |
 | `src/features/explorer/components/SimilarPlanets.tsx` | Danh sách thế giới tương đồng trong thẻ chi tiết |
+| `server/app/search.py` | Gấp dấu câu + xếp hạng kết quả tìm kiếm (thuần, không I/O) |
+| `server/migrations/004_search.sql` | `pg_trgm` + cột generated `name_key`/`host_key` + GIN |
+| `src/features/explorer/components/PlanetSearch.tsx` | Bảng lệnh Ctrl/⌘+K: tìm rồi bay tới |
+| `src/features/explorer/services/searchApi.ts` | Client `/v1/search` + đường dự phòng khi API chết |
 | `docker-compose.yml` | Postgres · Redis (+ API qua `--profile api`) |
 
 ---
@@ -119,7 +124,7 @@ người dùng gọi thẳng NASA, ta đặt một server của mình ở giữa
 | Mỗi user tải 2,4 MB JSON | ✅ 368 KB binary (226 KB qua dây) |
 | Mỗi máy tính lại toàn bộ điểm số | ✅ Tính 1 lần lúc ingest |
 | Không thể lưu lịch sử | ✅ Có bảng `planet_history` |
-| Không thể tìm kiếm nâng cao | Đã có SQL + index, sẵn sàng cho Giai đoạn 3 |
+| Không thể tìm kiếm nâng cao | ✅ `pg_trgm` + chỉ mục GIN: tìm được cả khi gõ sai |
 
 **NASA là nguồn để ingest, không phải API để gọi trực tiếp.** Đây là mẫu chuẩn công nghiệp.
 
@@ -182,6 +187,9 @@ Ingest thật: 6.278 dòng từ NASA + 9 thiên thể Hệ Mặt Trời = 6.287 
 
 - [x] **Presence realtime qua WebSocket** — Redis pub/sub + presence TTL
 - [x] **Auth + tài khoản: bookmark, bộ lọc đã lưu**
+- [x] **Cỗ máy thời gian** — phát lại bầu trời đầy dần + lịch sử hiệu chỉnh từng hành tinh
+- [x] **Tìm hành tinh tương đồng** — k-NN trên `cube`
+- [x] **Tìm kiếm chịu lỗi gõ** — `pg_trgm` + bảng lệnh `Ctrl/⌘+K`
 
 Chi tiết:
 
@@ -286,10 +294,56 @@ Chi tiết:
       vì lặng lẽ đưa máy quay tới chỗ trống
 - [x] Thêm **19 test** (tổng 139): `test_similarity.py`
 
+##### Tìm kiếm chịu lỗi gõ (2026-09-04)
+
+- [x] `GET /v1/search` — **không phải để lọc chuỗi con.** Client vốn đã giữ đủ 6.287 tên,
+      lọc chuỗi con chỉ là một `filter()`. Thứ trình duyệt không làm được là tha thứ cho
+      cách người ta gõ: `kepler 452b`, `KEPLER-452 B`, `keplr-452 b` đều là cùng một ý
+      định, và chỉ cái đầu tiên khớp `pl_name.includes(q)`.
+- [x] **Tách đôi bài toán.** Dấu câu là phần *tất định*: hai cột generated `name_key` /
+      `host_key` gấp tên về chữ-và-số thường (`Kepler-452 b` → `kepler452b`), nên gạch nối
+      và khoảng trắng biến mất trước khi bàn tới chuyện gần đúng. Lỗi gõ mới là phần cần
+      `pg_trgm`.
+- [x] **Cột generated, không phải cột do ingest ghi.** Giá trị là một hàm của tên; cột do
+      Postgres tự duy trì thì không thể lệch khỏi hàng dữ liệu như cột do code ứng dụng
+      ghi — mà sớm muộn cũng lệch.
+- [x] **Một chỉ mục GIN phục vụ cả hai đường.** `gin_trgm_ops` vừa chạy toán tử `%`
+      (ngưỡng similarity) vừa tăng tốc `LIKE '%...%'`, nên đường khớp nguyên văn không
+      phải quét tuần tự. Cả hai đường đều cần: `%` chấm một truy vấn ngắn với một tên dài
+      quá thấp để qua ngưỡng, còn `LIKE` thì mù trước một chữ cái bị đảo.
+- [x] **Khớp gần đúng không bao giờ vượt được khớp nguyên văn.** Điểm trigram bị chặn ở
+      0,55 còn dải "chứa chuỗi" bắt đầu từ 0,60: đoán lỗi gõ chỉ thêm được kết quả vào
+      cuối danh sách, không đẩy được thứ người ta thật sự gõ xuống dưới.
+- [x] Thang điểm có dải rõ nghĩa: trùng khít 1,0 · tiền tố 0,80–0,95 · chứa 0,60–0,75 ·
+      trigram dưới 0,55. Trong mỗi dải, *độ phủ* phân định — cùng là tiền tố, `toi700` đưa
+      `TOI-700 d` lên trước `TOI-7001 b` vì truy vấn chiếm gần trọn cái tên.
+- [x] Khớp theo **tên sao mẹ** vẫn tính nhưng chiết khấu (×0,95): gõ `trappist1` là cách
+      hỏi "cho tôi các hành tinh của ngôi sao này", nhưng nếu có hành tinh mang đúng tên
+      đó thì nó phải đứng trước.
+- [x] **Hai tầng: SQL thu hẹp, Python xếp hạng.** Postgres trả tối đa 400 ứng viên đã
+      pre-rank theo đúng các tầng mà `app/search.py` dùng, nên đầu danh sách thật nằm
+      trong đó. Xếp hạng cuối là hàm thuần — phần dễ âm thầm sai nhất được kiểm thử mà
+      không cần database.
+- [x] Đồng hạng thì **hành tinh gần hơn trước, rồi mới đến tên**. Bảy hành tinh TRAPPIST-1
+      khớp như nhau; tìm lại lần nữa phải ra đúng thứ tự cũ chứ không xáo theo thứ tự
+      index tình cờ trả về.
+- [x] Truy vấn sau khi gấp chỉ còn chữ và số, nên `%` và `_` không tới được mẫu `LIKE`:
+      chính phép gấp làm cho việc khớp mù dấu câu cũng đồng thời chặn injection.
+- [x] Dưới 2 ký tự **không phải là một truy vấn** — trả rỗng, thay vì một lát cắt tùy tiện
+      của kho dữ liệu xếp theo thứ tự không ai giải thích được.
+- [x] Bảng lệnh `Ctrl/⌘+K` (hoặc `/`): gõ → mũi tên chọn → `Enter` bay tới. **Cố ý tách
+      khỏi ô tìm kiếm ở sidebar** — ô đó *lọc* bản đồ, để sót chữ trong đó là ẩn mất sáu
+      nghìn thế giới; cái này *tìm*, đưa bạn tới một hành tinh và không đổi gì khác. Cùng
+      ranh giới mà cỗ máy thời gian giữ với bộ lọc.
+- [x] Kết quả đang **bị bộ lọc ẩn** thì gắn nhãn (bay tới đó là camera dừng ở chỗ trống),
+      kết quả khớp nhờ **tha lỗi gõ** cũng gắn nhãn — đoán mà trình bày như khớp chính xác
+      là kiểu nói dối nhỏ làm người ta mất tin vào cả danh sách.
+- [x] API chết thì bảng lệnh xếp hạng ngay trên kho dữ liệu đã tải trong bộ nhớ, **có
+      banner nói rõ** chế độ này không tha lỗi gõ — không có chỉ mục thì không có trigram.
+- [x] Thêm **19 test** (tổng 158): `test_search.py`
+
 #### 🔜 Còn lại của Giai đoạn 3
 
-- [ ] Search server-side bằng `pg_trgm` (đã có sẵn trong image, kiểm tra cùng lúc với
-      `cube`); phân trang cho DataTable
 - [ ] Permalink chia sẻ: filter + vị trí camera + hành tinh đang chọn → short URL
       (id đã là slug ổn định nên link sẽ không mục)
 - [ ] OG image render phía server → link share hiện "hộ chiếu hành tinh"
@@ -355,6 +409,12 @@ Chi tiết:
 | 2026-09-04 | Chiều thiếu **nội suy về trung bình**, kèm bitmask "đo thật" | Bỏ hẳn hành tinh thiếu số liệu thì mất ~12% kho dữ liệu. Nội suy về trung bình là lựa chọn trung tính, nhưng con số nội suy không được phép trưng ra như số đo — nên mặt nạ đi kèm ra tận API và tỉ số chỉ tính khi cả hai bên cùng đo được |
 | 2026-09-04 | Hệ Mặt Trời **không tính vào thống kê chuẩn hóa** nhưng **có trong kết quả** | 9 hàng do ta tự gieo không nên dịch chuyển cái trung bình mà cả kho dữ liệu được đo trên đó. Nhưng loại chúng khỏi kết quả thì mất luôn câu hỏi hay nhất mà khung tham chiếu này sinh ra để trả lời |
 | 2026-09-04 | Phần trăm "độ giống" là **hàm Gauss của khoảng cách**, và khoảng cách vẫn trả kèm | Người đọc cần một thanh để so hàng nào gần hơn, nhưng con số đó không phải xác suất. Trả kèm khoảng cách thô để lúc nào cũng đối chiếu được thứ hạng với con số sinh ra nó |
+
+| 2026-09-04 | **`pg_trgm` + cột generated**, không phải full-text `tsvector` | Tên hành tinh không phải văn xuôi: không có từ để stem, không có stop word. Hai vấn đề thật là dấu câu (tất định — giải bằng phép gấp về chữ-và-số) và lỗi gõ (giải bằng trigram). Full-text search không giải cái nào trong hai |
+| 2026-09-04 | Điểm trigram bị **chặn dưới dải khớp nguyên văn** | Nếu để chung thang, một cái tên ngắn khớp mờ có thể vượt qua cái tên người ta vừa gõ nguyên văn. Tha lỗi gõ là để *thêm* kết quả vào cuối danh sách, không phải để sắp xếp lại đầu danh sách |
+| 2026-09-04 | Xếp hạng cuối viết ở **Python**, không nhét hết vào `ORDER BY` | Thứ tự là phần dễ âm thầm sai nhất, và cũng là phần đáng test nhất. SQL thu hẹp bằng chỉ mục (400 ứng viên, pre-rank cùng tầng); hàm thuần quyết định thứ tự và có 19 test soi vào |
+| 2026-09-04 | **Không chuyển phân trang DataTable sang server** | Cả 6.287 hàng đã nằm sẵn trong bộ nhớ trình duyệt dưới dạng typed array — phân trang phía server chỉ thêm một vòng mạng cho thao tác đang tức thời. Mục này được ghi vào roadmap khi chưa rõ payload binary sẽ chở trọn kho dữ liệu. Tìm kiếm thì khác: nó cần chỉ mục trigram, thứ client không thể có |
+| 2026-09-04 | Bảng lệnh tìm kiếm **tách khỏi ô lọc ở sidebar** | Hai câu hỏi khác nhau: "hiện những hành tinh nào" và "đưa tôi tới hành tinh nào". Gộp lại thì một lần tìm kiếm âm thầm ẩn mất phần còn lại của bản đồ, đúng cái bẫy đã tránh khi tách dòng thời gian khỏi `applyFilters` |
 
 ---
 

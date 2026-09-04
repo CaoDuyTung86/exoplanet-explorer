@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Rocket, PanelLeft, Table2, Box, Volume2, VolumeX, TriangleAlert } from 'lucide-react'
+import { Rocket, PanelLeft, Table2, Box, Volume2, VolumeX, TriangleAlert, Search } from 'lucide-react'
 import { useExplorerStore } from './stores/explorerStore'
 import { fetchCatalog } from './services/catalogApi'
 import { fetchExoplanets, getCuratedFallback, processExoplanets } from './services/nasaApi'
@@ -15,6 +15,7 @@ import { StatsPanel } from './components/StatsPanel'
 import { TimeMachine } from './components/TimeMachine'
 import { AccountMenu } from './components/AccountMenu'
 import { PresenceBar } from './components/PresenceBar'
+import { PlanetSearch } from './components/PlanetSearch'
 import { useAccountStore } from './stores/accountStore'
 import { usePresenceStore } from './stores/presenceStore'
 import { useTranslation } from 'react-i18next'
@@ -202,6 +203,21 @@ export function ExplorerPage() {
         </div>
 
         <div className='flex items-center gap-3'>
+          {/* Find a planet. Separate from the sidebar's search box on purpose: that one
+              filters the map, this one takes you to a single world and changes nothing
+              else. */}
+          <button
+            onClick={() => useExplorerStore.getState().setSearchOpen(true)}
+            className='flex h-8 items-center gap-2 rounded-lg border border-cyan-500/20 bg-slate-100 px-3 text-xs text-slate-500 backdrop-blur-md transition-all hover:border-cyan-400/40 hover:text-slate-700 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-slate-200'
+            title={t('search.title')}
+          >
+            <Search className='h-3.5 w-3.5' />
+            <span className='hidden md:inline'>{t('search.button')}</span>
+            <kbd className='hidden rounded border border-slate-300 px-1 font-mono text-[10px] dark:border-white/10 md:inline'>
+              Ctrl K
+            </kbd>
+          </button>
+
           {/* View mode toggle */}
           <div className='flex h-8 items-center rounded-lg border border-cyan-500/20 bg-slate-100 dark:bg-slate-900/60 p-1 backdrop-blur-md transition-colors duration-300'>
             <button
@@ -346,6 +362,10 @@ export function ExplorerPage() {
           )}
         </main>
       </div>
+
+      {/* Mounted at the root rather than inside the 3D view: Ctrl+K has to work while
+          the table is open too, and choosing a result switches back to the map. */}
+      <PlanetSearch />
     </div>
   )
 }

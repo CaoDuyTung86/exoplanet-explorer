@@ -36,6 +36,12 @@ interface ExplorerState {
   // UI
   isLoading: boolean
   sidebarOpen: boolean
+  /**
+   * The find-a-planet palette. It lives here rather than inside the component because
+   * two different things open it — Ctrl/Cmd+K anywhere, and the button in the header —
+   * and a shared flag is smaller than an event bus between them.
+   */
+  searchOpen: boolean
   viewMode: '3d' | 'table'
   simulationSpeed: number
   isFlyingTo?: boolean
@@ -57,6 +63,7 @@ interface ExplorerState {
   resetFilters: () => void
   setLoading: (loading: boolean) => void
   setSidebarOpen: (open: boolean) => void
+  setSearchOpen: (open: boolean) => void
   setViewMode: (mode: '3d' | 'table') => void
   setSimulationSpeed: (speed: number) => void
   triggerCameraReset: () => void
@@ -180,6 +187,7 @@ export const useExplorerStore = create<ExplorerState>((set, get) => ({
   filters: DEFAULT_FILTERS,
   isLoading: true,
   sidebarOpen: true,
+  searchOpen: false,
   viewMode: '3d',
   simulationSpeed: 1.0,
   showComparison: false,
@@ -236,6 +244,7 @@ export const useExplorerStore = create<ExplorerState>((set, get) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
+  setSearchOpen: (open) => set({ searchOpen: open }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setSimulationSpeed: (speed) => set({ simulationSpeed: speed }),
   setShowComparison: (show) => set({ showComparison: show }),

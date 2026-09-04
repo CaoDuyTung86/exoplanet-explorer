@@ -42,6 +42,11 @@ theo thông số vật lý, và so sánh với chính Hệ Mặt Trời của ch
   nào kho dữ liệu chưa từng đo thì nội suy về trung bình quần thể và **ghi rõ là nội
   suy**, để số ước lượng không bao giờ bị trưng ra như số đo. Hỏi nó về Trái Đất, nó trả
   lời Kepler-452 b.
+- **Tìm kiếm tha lỗi gõ** — `kepler 452b`, `KEPLER-452 B` hay `keplr-452 b` đều ra
+  Kepler-452 b. Dấu câu bị gấp bỏ ngay trong một cột generated nên không bao giờ tới được
+  phép so sánh; lỗi gõ thật thì do chỉ mục GIN `pg_trgm` bắt. Điểm của một khớp gần đúng
+  bị chặn dưới dải khớp nguyên văn, nên nó chỉ thêm kết quả vào cuối danh sách chứ không
+  đẩy được thứ bạn thật sự gõ xuống dưới. Bấm Ctrl/⌘+K ở bất cứ đâu.
 - **Anh / Việt** — có từ điển riêng cho thuật ngữ thiên văn
   (*Radial Velocity* → *Vận tốc xuyên tâm*).
 
@@ -164,9 +169,11 @@ Xem [`server/README.md`](server/README.md) để biết chi tiết API, định 
 
 ## 🗺️ Lộ trình
 
-Giai đoạn 1 và 2 (dọn dẹp, và pipeline ingest + API) đã xong. Tiếp theo là những tính năng
-chỉ backend mới làm được: du hành thời gian trên catalog, tìm kiếm tương đồng bằng pgvector,
-chia sẻ góc nhìn, và presence realtime.
+Giai đoạn 1 và 2 (dọn dẹp, và pipeline ingest + API) đã xong, Giai đoạn 3 cũng gần trọn:
+tài khoản, presence realtime, cỗ máy thời gian, tìm hành tinh tương đồng và tìm kiếm tha
+lỗi gõ. Còn lại ở giai đoạn này là permalink chia sẻ và ảnh share render phía server. Giai
+đoạn 4 là hạ tầng — trước hết là chạy ingest tự động, vì lịch sử đo đạc chỉ dài thêm khi
+ingest thật sự chạy.
 
 **Xem [ROADMAP.md](ROADMAP.md) để biết kế hoạch từng giai đoạn và tiến độ hiện tại.**
 

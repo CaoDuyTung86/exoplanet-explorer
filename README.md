@@ -41,6 +41,11 @@ physical properties, and compare candidates against our own Solar System.
   over a Postgres `cube`, in about a millisecond. Dimensions the archive never measured
   are imputed to the population mean and *labelled as such*, so an estimate is never
   shown as an observation. Ask it about Earth and it answers Kepler-452 b.
+- **Search that forgives how you type** — `kepler 452b`, `KEPLER-452 B` and `keplr-452 b`
+  all land on Kepler-452 b. Punctuation is folded away in a generated column, so it never
+  reaches the comparison; genuine typos are caught by a `pg_trgm` GIN index. A fuzzy match
+  is capped below the literal band, so a guess can add results to the bottom of the list
+  but never displace what you actually typed. Ctrl/⌘+K from anywhere.
 - **English / Vietnamese** — including a dictionary for astronomical terms
   (*Radial Velocity* → *Vận tốc xuyên tâm*).
 
@@ -164,9 +169,11 @@ See [`server/README.md`](server/README.md) for the API, the binary format, and t
 
 ## 🗺️ Roadmap
 
-Phases 1 and 2 (cleanup, and the ingest pipeline plus API) are done. Next up are the
-features a backend makes possible: catalog time-travel, similarity search with pgvector,
-shareable views, and realtime presence.
+Phases 1 and 2 (the cleanup, and the ingest pipeline behind our own API) are done, and
+so is most of Phase 3: accounts, realtime presence, the time machine, similarity search
+and typo-tolerant search. Still open there: shareable permalinks and server-rendered
+share images. Phase 4 is infrastructure — scheduled ingest first, since the measurement
+history only grows when the ingest actually runs.
 
 **See [ROADMAP.md](ROADMAP.md) for the phased plan and current progress.**
 

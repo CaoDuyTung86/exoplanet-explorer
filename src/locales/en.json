@@ -190,5 +190,19 @@
     },
     "filteredOut": "filtered out",
     "hiddenByFilters": "{{name}} is hidden by your current filters"
+  },
+  "search": {
+    "title": "Find a planet",
+    "button": "Find",
+    "placeholder": "Kepler 452b, TRAPPIST-1, keplr...",
+    "hint": "Type at least two characters. Spelling and punctuation are forgiven.",
+    "searching": "Searching...",
+    "empty": "Nothing in the catalog matches “{{query}}”.",
+    "viaHost": "via {{host}}",
+    "approximate": "close match",
+    "filteredOut": "filtered out",
+    "offline": "The catalog API is unreachable — searching the planets already loaded, without typo tolerance.",
+    "keys": "↑↓ to move, ↵ to fly there",
+    "close": "Esc"
   }
 }

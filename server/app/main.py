@@ -22,6 +22,7 @@ from . import (
     redis_client,
     routes_account,
     routes_presence,
+    search,
     similarity,
 )
 from .config import get_settings
@@ -373,6 +374,80 @@ async def similar_planets(planet_id: str, limit: int = 8) -> dict[str, Any]:
         },
         "neighbours": neighbours,
     }
+
+
+# Everything a result row needs: the two folded keys the ranking reads, and the fields
+# the dropdown shows so a match never needs a second request to be displayed.
+SEARCH_SQL = """
+SELECT id, pl_name, hostname, name_key, host_key,
+       distance_ly, habitability_score, is_habitable, size_category,
+       disc_year, discoverymethod, is_solar_system,
+       similarity(name_key, $1) AS name_sim,
+       similarity(host_key, $1) AS host_sim
+  FROM planets
+ -- Two ways in, one index. The LIKE arm finds what the visitor literally typed; the `%`
+ -- arm is pg_trgm's similarity threshold, which is what forgives a typo. Either alone
+ -- would miss half the cases: `%` scores a short query against a long name too low to
+ -- pass, and LIKE cannot see past a transposed letter.
+ WHERE name_key LIKE $2 OR host_key LIKE $2
+    OR name_key % $1 OR host_key % $1
+ -- A pre-rank in the same tiers `app.search` uses, so the pool handed to the ranking
+ -- contains the rows that would have won had the whole match set been sorted.
+ ORDER BY (name_key = $1) DESC,
+          (name_key LIKE $3) DESC,
+          (host_key = $1) DESC,
+          GREATEST(similarity(name_key, $1), similarity(host_key, $1)) DESC
+ LIMIT $4
+"""
+
+
+@app.get("/v1/search", tags=["catalog"])
+async def search_planets(q: str = "", limit: int = 8) -> Response:
+    """Find a planet by a name the visitor half-remembers.
+
+    The browser can already filter 6,300 names by substring, so that is not what this is
+    for. This tolerates the punctuation people leave out and the letters they get wrong:
+    `kepler 452b`, `TRAPPIST 1e`, `keplr-452 b`. See `app.search` for the fold, the
+    trigram fallback, and why a fuzzy hit can never outrank a literal one.
+    """
+    normalized = search.normalize(q)
+    limit = search.clamp_limit(limit)
+
+    if len(normalized) < search.MIN_QUERY_LENGTH:
+        # Not an error — it is what every search box looks like one keystroke in.
+        return JSONResponse(
+            content={
+                "query": q,
+                "normalized": normalized,
+                "minQueryLength": search.MIN_QUERY_LENGTH,
+                "count": 0,
+                "results": [],
+            }
+        )
+
+    # `normalized` is alphanumerics only, so `%` and `_` cannot reach the LIKE pattern —
+    # the fold that makes matching punctuation-blind also makes this injection-proof.
+    rows = await db.pool().fetch(
+        SEARCH_SQL,
+        normalized,
+        f"%{normalized}%",
+        f"{normalized}%",
+        search.CANDIDATE_POOL,
+    )
+
+    results = search.rank(normalized, [dict(r) for r in rows], limit)
+
+    return JSONResponse(
+        content={
+            "query": q,
+            "normalized": normalized,
+            "count": len(results),
+            "results": results,
+        },
+        # Names change only when an ingest lands, and a visitor backspacing a character
+        # re-issues a query they just made.
+        headers={"Cache-Control": "public, max-age=60"},
+    )
 
 
 @app.get("/v1/timeline", tags=["catalog"])

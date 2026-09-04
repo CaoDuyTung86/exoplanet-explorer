@@ -190,5 +190,19 @@
     },
     "filteredOut": "bị lọc bỏ",
     "hiddenByFilters": "{{name}} đang bị bộ lọc hiện tại ẩn đi"
+  },
+  "search": {
+    "title": "Tìm hành tinh",
+    "button": "Tìm",
+    "placeholder": "Kepler 452b, TRAPPIST-1, keplr...",
+    "hint": "Gõ ít nhất hai ký tự. Sai chính tả hay thiếu dấu gạch vẫn tìm ra.",
+    "searching": "Đang tìm...",
+    "empty": "Không có hành tinh nào khớp “{{query}}”.",
+    "viaHost": "theo sao {{host}}",
+    "approximate": "gần đúng",
+    "filteredOut": "bị lọc bỏ",
+    "offline": "Không gọi được API — đang tìm trong số hành tinh đã tải, không bỏ qua được lỗi gõ.",
+    "keys": "↑↓ di chuyển, ↵ bay tới",
+    "close": "Esc"
   }
 }
