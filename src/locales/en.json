@@ -119,5 +119,33 @@
     "degradedNoApi": "Catalog API unreachable — falling back to a direct NASA request and computing everything in your browser. Start the API for the fast path.",
     "offlineFallback": "Could not reach the catalog API or NASA. Showing a curated set of seven well-known exoplanets only.",
     "dismiss": "Dismiss"
+  },
+  "account": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "createAccount": "Create account",
+    "email": "Email",
+    "password": "Password (min. 8 characters)",
+    "displayName": "Display name",
+    "working": "Working...",
+    "pitch": "An account keeps your saved planets and filter presets on the server, so they follow you to another browser.",
+    "savedPlanets": "Saved planets",
+    "noBookmarks": "No saved planets yet. Open a planet and press the bookmark icon.",
+    "addBookmark": "Save this planet",
+    "removeBookmark": "Remove from saved",
+    "habitabilitySuffix": "/100 habitability",
+    "savedFilters": "Filter presets",
+    "presetNamePlaceholder": "Name this preset",
+    "savePreset": "Save the current filters",
+    "deletePreset": "Delete preset",
+    "noPresets": "Set up the filters above, name them, and save to reuse later."
+  },
+  "presence": {
+    "title": "Exploring now",
+    "you": "you",
+    "signedIn": "Signed in",
+    "viewing": "Looking at {{planet}}",
+    "browsing": "Browsing the map",
+    "aloneHere": "Nobody else is on the map right now."
   }
 }

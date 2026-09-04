@@ -1,6 +1,7 @@
 import type { ProcessedPlanet } from '../types'
-import { X, Globe, Thermometer, Ruler, Weight, Telescope, Star, Orbit } from 'lucide-react'
+import { X, Globe, Thermometer, Ruler, Weight, Telescope, Star, Orbit, Bookmark } from 'lucide-react'
 import { useExplorerStore } from '../stores/explorerStore'
+import { useAccountStore } from '../stores/accountStore'
 import { HabitabilityGauge } from './HabitabilityGauge'
 import { useTranslation } from 'react-i18next'
 import { translateTerm } from '../lib/astronomyDictionary'
@@ -16,8 +17,15 @@ export function PlanetDetailCard() {
   const setSelectedPlanet = useExplorerStore((s) => s.setSelectedPlanet)
   const showComparison = useExplorerStore((s) => s.showComparison)
   const setShowComparison = useExplorerStore((s) => s.setShowComparison)
+  const user = useAccountStore((s) => s.user)
+  const bookmarkedIds = useAccountStore((s) => s.bookmarkedIds)
+  const toggleBookmark = useAccountStore((s) => s.toggleBookmark)
 
   if (!planet) return null
+
+  // The button is only meaningful with somewhere to save to, so it is hidden rather
+  // than shown disabled for a signed-out visitor.
+  const isBookmarked = bookmarkedIds.has(planet.id)
 
   const earthComparison = getEarthComparison(planet, t)
 
@@ -25,14 +33,29 @@ export function PlanetDetailCard() {
     <div className='pointer-events-auto absolute left-2 right-2 bottom-2 md:left-auto md:bottom-auto md:right-4 md:top-4 z-30 w-auto md:w-[380px] max-h-[50vh] md:max-h-[calc(100vh-8rem)] overflow-y-auto rounded-2xl border border-slate-300 dark:border-white/10 bg-slate-950/90 shadow-2xl shadow-primary/10 backdrop-blur-xl'>
       {/* Header */}
       <div className='relative border-b border-slate-300 dark:border-white/10 p-5'>
-        <button
-          onClick={() => setSelectedPlanet(null)}
-          className='absolute right-3 top-3 rounded-lg p-1.5 text-slate-500 dark:text-slate-400 dark:text-white/40 transition-colors hover:bg-slate-200 dark:bg-white/10 hover:text-slate-900 dark:text-white'
-        >
-          <X className='h-4 w-4' />
-        </button>
+        <div className='absolute right-3 top-3 flex items-center gap-1'>
+          {user && (
+            <button
+              onClick={() => toggleBookmark(planet.id)}
+              title={t(isBookmarked ? 'account.removeBookmark' : 'account.addBookmark')}
+              className={`rounded-lg p-1.5 transition-colors ${
+                isBookmarked
+                  ? 'text-amber-400 hover:bg-amber-500/10'
+                  : 'text-slate-500 dark:text-white/40 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-amber-400'
+              }`}
+            >
+              <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
+            </button>
+          )}
+          <button
+            onClick={() => setSelectedPlanet(null)}
+            className='rounded-lg p-1.5 text-slate-500 dark:text-slate-400 dark:text-white/40 transition-colors hover:bg-slate-200 dark:bg-white/10 hover:text-slate-900 dark:text-white'
+          >
+            <X className='h-4 w-4' />
+          </button>
+        </div>
 
-        <div className='pr-8'>
+        <div className={user ? 'pr-16' : 'pr-8'}>
           <span className='mb-1 inline-block rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary'>
             {translateTerm(planet.sizeCategory, i18n.language)}
           </span>

@@ -119,5 +119,33 @@
     "degradedNoApi": "Không kết nối được API catalog — đang tải thẳng từ NASA và tính toán ngay trên trình duyệt. Hãy khởi động API để chạy đường nhanh.",
     "offlineFallback": "Không kết nối được API catalog lẫn NASA. Chỉ đang hiển thị 7 ngoại hành tinh tiêu biểu được chọn sẵn.",
     "dismiss": "Bỏ qua"
+  },
+  "account": {
+    "signIn": "Đăng nhập",
+    "signOut": "Đăng xuất",
+    "createAccount": "Tạo tài khoản",
+    "email": "Email",
+    "password": "Mật khẩu (tối thiểu 8 ký tự)",
+    "displayName": "Tên hiển thị",
+    "working": "Đang xử lý...",
+    "pitch": "Tài khoản lưu hành tinh đã đánh dấu và bộ lọc trên máy chủ, nên bạn mở trình duyệt khác vẫn còn.",
+    "savedPlanets": "Hành tinh đã lưu",
+    "noBookmarks": "Chưa lưu hành tinh nào. Mở một hành tinh rồi bấm biểu tượng đánh dấu.",
+    "addBookmark": "Lưu hành tinh này",
+    "removeBookmark": "Bỏ khỏi danh sách đã lưu",
+    "habitabilitySuffix": "/100 điểm sống được",
+    "savedFilters": "Bộ lọc đã lưu",
+    "presetNamePlaceholder": "Đặt tên cho bộ lọc",
+    "savePreset": "Lưu bộ lọc hiện tại",
+    "deletePreset": "Xóa bộ lọc",
+    "noPresets": "Chỉnh bộ lọc ở trên, đặt tên rồi lưu lại để dùng sau."
+  },
+  "presence": {
+    "title": "Đang khám phá",
+    "you": "bạn",
+    "signedIn": "Đã đăng nhập",
+    "viewing": "Đang xem {{planet}}",
+    "browsing": "Đang xem bản đồ",
+    "aloneHere": "Hiện chưa có ai khác trên bản đồ."
   }
 }

@@ -4,7 +4,8 @@
 > Nó chứa: dự án là gì, kiến trúc hiện tại, các quyết định đã chốt, việc đã làm và việc còn lại.
 > Khi mở chat mới, chỉ cần nói *"đọc ROADMAP.md rồi làm tiếp Giai đoạn X"* là đủ.
 >
-> **Cập nhật lần cuối:** 2026-09-03 · **Đã xong:** Giai đoạn 1, 2 · **Tiếp theo:** Giai đoạn 3
+> **Cập nhật lần cuối:** 2026-09-04 · **Đã xong:** Giai đoạn 1, 2, và phần realtime +
+> tài khoản của Giai đoạn 3 · **Tiếp theo:** phần còn lại của Giai đoạn 3
 
 ---
 
@@ -21,7 +22,7 @@ Repo: `github.com/CaoDuyTung86/exoplanet-explorer` · License MIT
 
 ---
 
-## 2. Kiến trúc hiện tại (sau Giai đoạn 2)
+## 2. Kiến trúc hiện tại
 
 ```
                  ┌────────────────────────────────────┐
@@ -29,21 +30,37 @@ Repo: `github.com/CaoDuyTung86/exoplanet-explorer` · License MIT
   app.ingest ───►│  NASA TAP → derive → diff → upsert │
   (thủ công)     └──────────────┬─────────────────────┘
                                 ▼
-                     ┌─────────────────────┐
-                     │  Postgres 17        │  planets · ingest_runs
-                     │  (Docker, cổng 5433)│  planet_history · schema_migrations
-                     └──────────┬──────────┘
-                                ▼
-                  ┌───────────────────────────────┐
-  Browser ──────► │  FastAPI  (cổng 8000)         │
-  (Vite proxy     │  /v1/catalog.bin   binary     │
-   /api/v1)       │  /v1/catalog/meta  chuỗi      │
-                  │  /v1/stats         SQL agg    │
-                  │  ETag · Cache-Control · gzip  │
-                  └───────────────────────────────┘
+                     ┌─────────────────────┐      ┌──────────────────┐
+                     │  Postgres 17        │      │  Redis 8         │
+                     │  (Docker, cổng 5433)│      │  (cổng 6380)     │
+                     │  planets            │      │  presence:peer:* │
+                     │  ingest_runs        │      │  presence:index  │
+                     │  planet_history     │      │  pub/sub events  │
+                     │  users · sessions   │      │  rate-limit keys │
+                     │  bookmarks          │      └────────┬─────────┘
+                     │  saved_filters      │               │
+                     └──────────┬──────────┘               │
+                                ▼                          ▼
+                  ┌────────────────────────────────────────────────┐
+  Browser ──────► │  FastAPI  (cổng 8000)                          │
+  (Vite proxy     │  /v1/catalog.bin   binary                      │
+   /api/v1,       │  /v1/catalog/meta  chuỗi                       │
+   ws: true)      │  /v1/stats         SQL agg                     │
+                  │  /v1/auth/*        cookie phiên (opaque token) │
+                  │  /v1/me/*          bookmark · bộ lọc đã lưu    │
+                  │  /v1/ws/presence   WebSocket                   │
+                  │  ETag · Cache-Control · gzip                   │
+                  └────────────────────────────────────────────────┘
                                 ▼
               decodeCatalog() → typed arrays → InstancedMesh
 ```
+
+**Vì sao presence cần Redis:** một WebSocket chỉ nằm trong *một* tiến trình. Có 2 tiến
+trình API sau load balancer thì người ở tiến trình A không thấy người ở tiến trình B.
+Redis pub/sub là sợi dây nối: mọi tiến trình publish vào cùng một kênh và cũng subscribe
+kênh đó, nên nhận được **tất cả** sự kiện — kể cả của chính nó — rồi đẩy xuống socket cục
+bộ. Không có Redis thì hub tự lùi về registry in-memory (đúng, nhưng chỉ trong 1 tiến
+trình) và ghi rõ điều đó ở log lẫn `GET /health`.
 
 **Fallback (có báo cho người dùng):** API chết → gọi thẳng NASA + Web Worker (banner hổ
 phách) → cả hai chết → 7 hành tinh curated (banner hổ phách). Không còn thất bại im lặng.
@@ -61,7 +78,17 @@ phách) → cả hai chết → 7 hành tinh curated (banner hổ phách). Khôn
 | `src/features/explorer/services/nasaApi.ts` | Đường legacy (fallback) + `processExoplanets` |
 | `src/features/explorer/index.tsx` | Thứ tự fallback + banner cảnh báo |
 | `src/features/explorer/components/PlanetCloud.tsx` | InstancedMesh + shader thủ tục |
-| `docker-compose.yml` | Postgres (+ API qua `--profile api`) |
+| `server/app/security.py` | Băm mật khẩu, sinh token phiên, làm sạch input (không I/O) |
+| `server/app/auth.py` | Users + sessions trong Postgres, dependency của FastAPI |
+| `server/app/presence.py` | Hub presence: Redis pub/sub, fallback in-memory, sweeper TTL |
+| `server/app/routes_account.py` | `/v1/auth/*`, `/v1/me/bookmarks`, `/v1/me/filters` |
+| `server/app/routes_presence.py` | WebSocket `/v1/ws/presence` + snapshot `/v1/presence` |
+| `server/migrations/002_accounts.sql` | users · sessions · bookmarks · saved_filters |
+| `src/features/explorer/stores/accountStore.ts` | Trạng thái tài khoản phía client |
+| `src/features/explorer/stores/presenceStore.ts` | Client WebSocket + reconnect backoff |
+| `src/features/explorer/components/AccountMenu.tsx` | Đăng nhập/đăng ký + danh sách đã lưu |
+| `src/features/explorer/components/PresenceBar.tsx` | Ai đang online, đang xem hành tinh nào |
+| `docker-compose.yml` | Postgres · Redis (+ API qua `--profile api`) |
 
 ---
 
@@ -142,7 +169,42 @@ người dùng gọi thẳng NASA, ta đặt một server của mình ở giữa
 
 Ingest thật: 6.278 dòng từ NASA + 9 thiên thể Hệ Mặt Trời = 6.287 rows, **8,9 giây**.
 
-### 🔜 Giai đoạn 3 — Tính năng chỉ backend mới làm được ⬅️ *tiếp theo*
+### 🟡 Giai đoạn 3 — Tính năng chỉ backend mới làm được ⬅️ *đang làm*
+
+#### ✅ Đã xong (2026-09-04)
+
+- [x] **Presence realtime qua WebSocket** — Redis pub/sub + presence TTL
+- [x] **Auth + tài khoản: bookmark, bộ lọc đã lưu**
+
+Chi tiết:
+
+- [x] Redis 8 vào Docker Compose (cổng host **6380**, không persist — presence là dữ liệu
+      phù du, `--save '' --appendonly no`)
+- [x] Migration `002_accounts.sql`: `users`, `sessions`, `bookmarks`, `saved_filters`
+- [x] **Phiên = opaque token, không phải JWT.** 32 byte từ `secrets.token_urlsafe` gửi cho
+      trình duyệt qua cookie httpOnly/SameSite=Lax; database chỉ giữ **SHA-256** của token
+- [x] Mật khẩu băm bằng **Argon2id**; tham số nằm trong chuỗi hash nên nâng cấp sau này
+      chỉ cần re-hash lúc đăng nhập, không vô hiệu hóa tài khoản cũ
+- [x] Chống dò tài khoản: sai mật khẩu và không có tài khoản trả **cùng một thông báo** và
+      tốn **xấp xỉ cùng thời gian** (vẫn băm một lần khi email không tồn tại)
+- [x] Rate limit đăng nhập/đăng ký: fixed window trong Redis, khóa theo IP **và** email,
+      tự lùi về bộ đếm in-process khi Redis chết
+- [x] WebSocket `/v1/ws/presence`: hub với 2 backend (Redis / in-memory), một queue cho
+      mỗi socket nên client chậm không chặn broadcast, sweeper biến TTL hết hạn thành
+      sự kiện `leave`
+- [x] **Client không được tự đặt tên mình.** Khách ẩn danh nhận callsign suy ra từ peer id;
+      người đã đăng nhập lấy tên từ cookie phiên đi kèm lúc bắt tay WebSocket
+- [x] Frontend: menu tài khoản, nút bookmark trên thẻ chi tiết, mục "bộ lọc đã lưu" trong
+      sidebar, thanh presence (bấm vào một người là bay tới hành tinh họ đang xem)
+- [x] Presence tự kết nối lại khi đăng nhập/đăng xuất, có exponential backoff khi API chết
+- [x] Vite proxy bật `ws: true`, thêm biến `API_PROXY_TARGET` để đổi cổng API khi 8000 bận
+- [x] **Sống sót qua Redis restart:** vòng subscribe tự resubscribe với backoff. Trước khi
+      sửa, `pubsub.listen()` ném lỗi là task chết luôn — API vẫn phục vụ WebSocket bình
+      thường nhưng **âm thầm không forward gì nữa**, kiểu hỏng tệ nhất vì nhìn ngoài vẫn ổn
+- [x] Redis chết giữa chừng: `/v1/presence` trả `degraded: true` thay vì 500
+- [x] Thêm **45 test** (tổng 97): `test_security.py`, `test_presence.py`
+
+#### 🔜 Còn lại của Giai đoạn 3
 
 - [ ] **Time machine** — animate bầu trời "đầy dần" từ 1992 → nay.
       *Ghi chú:* `disc_year` đã có sẵn trong binary nên bản cơ bản làm được ngay ở client;
@@ -150,12 +212,13 @@ Ingest thật: 6.278 dòng từ NASA + 9 thiên thể Hệ Mặt Trời = 6.287 
       theo thời gian — cái đó NASA không cho truy vấn lại.
 - [ ] **Tìm hành tinh tương đồng** — pgvector trên feature vector chuẩn hóa
       (radius, mass, insolation, teff). Cột `insolation` đã được tính và lưu sẵn ở Giai đoạn 2.
+      *Lưu ý:* `postgres:17-alpine` **không có pgvector**; hoặc đổi sang image
+      `pgvector/pgvector:pg17`, hoặc dùng extension `cube` có sẵn cho k-NN.
 - [ ] Search server-side bằng `pg_trgm`; phân trang cho DataTable
 - [ ] Permalink chia sẻ: filter + vị trí camera + hành tinh đang chọn → short URL
       (id đã là slug ổn định nên link sẽ không mục)
 - [ ] OG image render phía server → link share hiện "hộ chiếu hành tinh"
-- [ ] **Presence realtime qua WebSocket** — Redis pub/sub + presence TTL
-- [ ] Auth + tài khoản: bookmark, bộ lọc đã lưu, "tour" tự tạo
+- [ ] "Tour" tự tạo (phần còn lại của mục tài khoản)
 
 ### 🔜 Giai đoạn 4 — Hạ tầng
 
@@ -200,13 +263,23 @@ Ingest thật: 6.278 dòng từ NASA + 9 thiên thể Hệ Mặt Trời = 6.287 
 | 2026-09-03 | Màu lưu uint8 thay vì float32 | Giảm 4× phần màu, shader chia 255 lúc nạp, mắt không phân biệt được |
 | 2026-09-03 | Migration SQL thuần, không Alembic | 4 bảng thì runner ~20 dòng là đủ và giữ SQL đọc được như SQL. Đổi sang Alembic khi schema bắt đầu biến động |
 | 2026-09-03 | Giữ đường legacy gọi thẳng NASA làm fallback | Người clone repo mà chưa chạy backend vẫn xem được bản đồ — nhưng **có banner báo rõ** là đang ở chế độ degraded |
+| 2026-09-04 | **Phiên đăng nhập = opaque token, không dùng JWT** | JWT không thu hồi được nếu không có denylist — mà denylist chính là bảng `sessions` này cộng thêm việc. Token ngẫu nhiên + lưu SHA-256: rò database không lộ phiên đang sống, `DELETE` một dòng là thu hồi tức thì, và tra cứu là truy vấn theo primary key |
+| 2026-09-04 | Cookie httpOnly + SameSite=Lax thay vì lưu token trong `localStorage` | httpOnly nghĩa là XSS không đọc được token; SameSite=Lax chặn cookie trong POST cross-site, tức là chặn CSRF. Đổi lại phải bật `allow_credentials` trong CORS và đặt `COOKIE_SECURE=true` khi chạy HTTPS |
+| 2026-09-04 | **Argon2id** (`argon2-cffi`) chứ không phải bcrypt | Memory-hard nên GPU không tăng tốc nhiều; tham số nằm ngay trong chuỗi hash nên nâng cấp về sau chỉ cần re-hash lúc đăng nhập |
+| 2026-09-04 | Sai mật khẩu và không có tài khoản trả **cùng một thông báo** | Nếu khác nhau thì endpoint đăng nhập trở thành công cụ dò xem email nào đã đăng ký. Có băm giả một lần khi email không tồn tại để thời gian phản hồi không lộ ra điều đó |
+| 2026-09-04 | **Server tự đặt tên hiển thị cho khách ẩn danh**, không nhận tên do client gửi | Tên này hiện cạnh tên người khác trong danh sách presence. Nếu client tự khai thì ai cũng ký tên thành người khác được. Callsign suy ra từ peer id nên reconnect vẫn giữ nguyên tên |
+| 2026-09-04 | Hậu tố callsign dùng **6 ký tự hex** thay vì 4 | 4 ký tự = 16 bit; ở mức trần 200 người thì xác suất trùng ~26%, tức là hai người cùng tên trong một phòng. Test `test_different_ids_get_different_callsigns` phát hiện ra điều này |
+| 2026-09-04 | Redis là **tùy chọn**, hub tự lùi về in-memory | Người clone repo chỉ chạy `docker compose up -d db` vẫn dùng được app. Chế độ degraded được ghi log và báo ở `GET /health` + `GET /v1/presence`, không im lặng |
+| 2026-09-04 | Mỗi socket một `asyncio.Queue` có giới hạn, đầy thì **bỏ sự kiện** | Một client đọc chậm không được phép chặn broadcast của cả phòng. Mất một update là hỏng đúng cách: snapshot lần sau sẽ chữa lại cho client đó |
+| 2026-09-04 | `saved_filters.filters` là **JSONB**, không phải 10 cột có kiểu | Hình dạng bộ lọc là chuyện của client và thay đổi mỗi lần thêm một thanh trượt. Server chỉ lưu và trả lại nguyên vẹn |
+| 2026-09-04 | Áp preset là `{...DEFAULT_FILTERS, ...preset}` chứ không merge vào bộ lọc hiện tại | Nếu merge, một preset lưu 3 thanh trượt sẽ âm thầm kế thừa 7 thanh còn lại từ màn hình lúc mở — tức là không tái lập được |
 
 ---
 
 ## 6. Chạy toàn bộ hệ thống
 
 ```bash
-docker compose up -d db
+docker compose up -d db redis
 ```
 
 ```bash
@@ -230,7 +303,18 @@ Frontend ở `http://localhost:3001` (Vite tự nhảy cổng khác nếu 3001 b
 cần cấu hình gì.
 
 Kiểm tra nhanh: chấm tròn cạnh số hành tinh trên header — **xanh lá** = đang dùng API,
-**hổ phách** = đang chạy degraded.
+**hổ phách** = đang chạy degraded. Mở panel presence (biểu tượng người ở header) sẽ thấy
+nhãn `redis` hoặc `memory` ở góc phải — đó là cách nhanh nhất để biết Redis đã nối chưa.
+
+Nếu cổng 8000 đã bị chiếm, chạy API ở cổng khác rồi trỏ Vite sang đó:
+
+```bash
+cd server && .venv/Scripts/python -m uvicorn app.main:app --reload --port 8010
+```
+
+```bash
+set API_PROXY_TARGET=http://127.0.0.1:8010 && pnpm dev
+```
 
 ---
 
@@ -249,3 +333,15 @@ Kiểm tra nhanh: chấm tròn cạnh số hành tinh trên header — **xanh l�
 - Route `src/routes/_authenticated/` không xác thực gì (di sản Clerk). Giữ lại vì Giai
   đoạn 3 sẽ thêm auth thật — nếu đến lúc đó vẫn không dùng thì gộp vào `routes/index.tsx`.
 - README nói "60-165 FPS" — chưa từng đo thật.
+- **Chưa có luồng đặt lại mật khẩu**, cũng chưa có xác minh email. Đăng ký xong là dùng
+  luôn; quên mật khẩu thì mất tài khoản.
+- **Rate limit tin `X-Forwarded-For`.** Đúng khi đứng sau reverse proxy của mình, sai nếu
+  API bị phơi thẳng ra internet vì header đó giả được.
+- Bảng `sessions` chỉ được dọn lúc khởi động API. Chạy liên tục nhiều tháng thì dòng hết
+  hạn sẽ tích lại — cần một job định kỳ ở Giai đoạn 4.
+- Presence chỉ phát `planetId`, chưa phát vị trí camera. Muốn thấy con trỏ của người khác
+  trong không gian 3D thì cần thêm, kèm throttle vì camera đổi mỗi khung hình.
+- `sessions` chưa có UI "đăng xuất khỏi mọi thiết bị" dù dữ liệu đã đủ để làm.
+- Route `src/routes/_authenticated/` **vẫn** không xác thực gì. Auth đã có thật rồi nhưng
+  bản đồ cố tình cho xem ẩn danh, nên thư mục này giờ chỉ còn là di sản — nên gộp vào
+  `routes/index.tsx`.

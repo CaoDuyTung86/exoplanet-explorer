@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
-from . import catalog, db
+from . import auth, catalog, db, presence, redis_client, routes_account, routes_presence
 from .config import get_settings
 from .ingest import run_ingest
 
@@ -32,7 +32,15 @@ async def lifespan(app: FastAPI):
     applied = await db.run_migrations()
     if applied:
         log.info("applied migrations: %s", ", ".join(applied))
+
+    purged = await auth.purge_expired_sessions()
+    if purged:
+        log.info("purged %d expired session(s)", purged)
+
+    await presence.hub.start()
     yield
+    await presence.hub.stop()
+    await redis_client.close()
     await db.disconnect()
 
 
@@ -51,8 +59,13 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
-    allow_methods=["GET", "POST"],
+    # DELETE is what removes a bookmark or a saved filter.
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["*"],
+    # The session cookie only travels cross-origin with this on. It is safe alongside an
+    # explicit origin list — it would not be with a wildcard, which the browser rejects
+    # in combination with credentials anyway.
+    allow_credentials=True,
     # Without this the browser cannot read ETag, so conditional requests never kick in.
     expose_headers=["ETag", "X-Catalog-Run-Id"],
 )
@@ -102,7 +115,9 @@ async def health() -> dict[str, Any]:
         await db.pool().fetchval("SELECT 1")
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=f"database unreachable: {exc}") from exc
-    return {"status": "ok"}
+    # Redis being down is not unhealthy — presence degrades to a single process and the
+    # app keeps working — so it is reported rather than turned into a 503.
+    return {"status": "ok", "presenceBackend": presence.hub.backend_name}
 
 
 @app.get("/v1/version", tags=["catalog"])
@@ -235,3 +250,7 @@ async def trigger_ingest() -> dict[str, Any]:
     summary = await run_ingest()
     _cache["run_id"] = None  # force a rebuild on the next catalog request
     return summary
+
+
+app.include_router(routes_account.router)
+app.include_router(routes_presence.router)

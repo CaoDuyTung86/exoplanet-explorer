@@ -6,6 +6,15 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev"],
       "port": 3001
+    },
+    {
+      "name": "web-api-8010",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "set API_PROXY_TARGET=http://127.0.0.1:8010 && pnpm dev -- --port 3002 --strictPort"
+      ],
+      "port": 3002
     }
   ]
 }

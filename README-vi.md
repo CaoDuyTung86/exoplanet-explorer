@@ -30,6 +30,12 @@ theo thông số vật lý, và so sánh với chính Hệ Mặt Trời của ch
   drone riêng cho mỗi hành tinh: cao độ theo bán kính, tần số cắt theo nhiệt độ.
 - **Bộ lọc và chế độ bảng** — bán kính, khối lượng, nhiệt độ, khoảng cách, chu kỳ quỹ đạo,
   phương pháp khám phá, lớp quang phổ, năm khám phá, kèm bảng dữ liệu ảo hóa (virtualised).
+- **Tài khoản** — đăng nhập để lưu hành tinh đã đánh dấu và các bộ lọc đặt tên lên máy chủ
+  thay vì nằm trong một trình duyệt. Phiên đăng nhập là token ngẫu nhiên đặt trong cookie
+  httpOnly, database chỉ giữ bản băm, nên đăng xuất là thu hồi thật.
+- **Presence thời gian thực** — WebSocket cho biết ai đang ở trên bản đồ và đang xem hành
+  tinh nào; bấm vào một người là bay tới đó. Redis pub/sub chuyển sự kiện giữa các tiến
+  trình API, còn TTL kèm heartbeat xử lý trường hợp tab bị tắt đột ngột.
 - **Anh / Việt** — có từ điển riêng cho thuật ngữ thiên văn
   (*Radial Velocity* → *Vận tốc xuyên tâm*).
 
@@ -45,8 +51,9 @@ theo thông số vật lý, và so sánh với chính Hệ Mặt Trời của ch
 | Âm thanh | Howler.js + Web Audio API thuần |
 | Đa ngôn ngữ | i18next / react-i18next |
 | PWA | vite-plugin-pwa |
-| **API** | **Python 3.13, FastAPI, asyncpg, numpy** |
+| **API** | **Python 3.13, FastAPI, asyncpg, numpy, argon2** |
 | **Database** | **Postgres 17 (Docker Compose)** |
+| **Thời gian thực** | **WebSocket + Redis 8 pub/sub** |
 | Nguồn dữ liệu | [NASA Exoplanet Archive](https://exoplanetarchive.ipac.caltech.edu/) TAP API (`pscomppars`) |
 
 ## 💻 Chạy ở máy
@@ -59,10 +66,10 @@ git clone https://github.com/CaoDuyTung86/exoplanet-explorer.git
 cd exoplanet-explorer && pnpm install
 ```
 
-Khởi động Postgres rồi chạy ingest lần đầu (lệnh này áp dụng luôn migration):
+Khởi động Postgres và Redis rồi chạy ingest lần đầu (lệnh này áp dụng luôn migration):
 
 ```bash
-docker compose up -d db
+docker compose up -d db redis
 ```
 
 ```bash
@@ -91,6 +98,9 @@ chạy ở chế độ degraded.
 
 **Frontend vẫn chạy độc lập được** khi không có backend: nó tự chuyển sang gọi thẳng NASA
 và tính toán ngay trên trình duyệt, đồng thời hiện banner báo rõ.
+
+Redis cũng là tùy chọn. Không có Redis thì presence vẫn hoạt động trong phạm vi một tiến
+trình API; API ghi log chế độ đang chạy và báo lại ở `GET /health`.
 
 | Lệnh | Công dụng |
 | --- | --- |

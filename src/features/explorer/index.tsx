@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Rocket, PanelLeft, Table2, Box, Volume2, VolumeX, TriangleAlert } from 'lucide-react'
 import { useExplorerStore } from './stores/explorerStore'
 import { fetchCatalog } from './services/catalogApi'
@@ -12,6 +12,10 @@ import { DataTable } from './components/DataTable'
 import { ThemeToggle } from './components/ThemeToggle'
 import { LanguageToggle } from './components/LanguageToggle'
 import { StatsPanel } from './components/StatsPanel'
+import { AccountMenu } from './components/AccountMenu'
+import { PresenceBar } from './components/PresenceBar'
+import { useAccountStore } from './stores/accountStore'
+import { usePresenceStore } from './stores/presenceStore'
 import { useTranslation } from 'react-i18next'
 
 /** Where the currently displayed catalog came from. */
@@ -33,6 +37,49 @@ export function ExplorerPage() {
   const selectedPlanet = useExplorerStore((s) => s.selectedPlanet)
 
   const planets = useExplorerStore((s) => s.planets)
+  const loadSession = useAccountStore((s) => s.loadSession)
+  const connectPresence = usePresenceStore((s) => s.connect)
+  const disconnectPresence = usePresenceStore((s) => s.disconnect)
+  const setPresenceFocus = usePresenceStore((s) => s.setFocus)
+
+  // Who is signed in, and the presence socket. Both are independent of the catalog
+  // load, so neither is allowed to hold up the map.
+  useEffect(() => {
+    loadSession()
+  }, [loadSession])
+
+  useEffect(() => {
+    connectPresence()
+    return () => disconnectPresence()
+  }, [connectPresence, disconnectPresence])
+
+  // Broadcast what this visitor is looking at, so it shows up in everyone else's list.
+  useEffect(() => {
+    setPresenceFocus(selectedPlanet?.id ?? null)
+  }, [selectedPlanet?.id, setPresenceFocus])
+
+  // The server reads the session cookie during the WebSocket handshake, so the identity
+  // in the presence list is fixed for the life of the socket. Signing in or out has to
+  // reopen it, or the room keeps showing the previous name.
+  const accountUser = useAccountStore((s) => s.user)
+  const accountReady = useAccountStore((s) => s.ready)
+  const lastIdentity = useRef<number | null | undefined>(undefined)
+
+  useEffect(() => {
+    if (!accountReady) return
+    const identity = accountUser?.id ?? null
+
+    // The first settle after boot is the identity the socket already opened with.
+    if (lastIdentity.current === undefined) {
+      lastIdentity.current = identity
+      return
+    }
+    if (lastIdentity.current === identity) return
+
+    lastIdentity.current = identity
+    disconnectPresence()
+    connectPresence()
+  }, [accountReady, accountUser?.id, connectPresence, disconnectPresence])
 
   useEffect(() => {
     if (planets.length > 0) return
@@ -191,6 +238,9 @@ export function ExplorerPage() {
             />
             <span>{filteredPlanets.length.toLocaleString()} {i18n.language.startsWith('vi') ? 'hành tinh' : 'planets loaded'}</span>
           </div>
+
+          <PresenceBar />
+          <AccountMenu />
 
           <ThemeToggle />
           <LanguageToggle />

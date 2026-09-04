@@ -30,6 +30,12 @@ physical properties, and compare candidates against our own Solar System.
   planet: pitch follows radius, filter cutoff follows temperature.
 - **Filtering and table view** — radius, mass, temperature, distance, orbital period, discovery
   method, spectral class and discovery year, plus a virtualised data table.
+- **Accounts** — sign in to keep bookmarked planets and named filter presets on the
+  server rather than in one browser. Sessions are opaque tokens in an httpOnly cookie,
+  stored only as a hash, so signing out revokes them for real.
+- **Realtime presence** — a WebSocket shows who else is on the map and which planet each
+  visitor is looking at; click one to fly there. Redis pub/sub carries the events between
+  API processes, and a TTL plus heartbeat handles the tab that was force-quit.
 - **English / Vietnamese** — including a dictionary for astronomical terms
   (*Radial Velocity* → *Vận tốc xuyên tâm*).
 
@@ -45,8 +51,9 @@ physical properties, and compare candidates against our own Solar System.
 | Audio | Howler.js + native Web Audio API |
 | i18n | i18next / react-i18next |
 | PWA | vite-plugin-pwa |
-| **API** | **Python 3.13, FastAPI, asyncpg, numpy** |
+| **API** | **Python 3.13, FastAPI, asyncpg, numpy, argon2** |
 | **Database** | **Postgres 17 (Docker Compose)** |
+| **Realtime** | **WebSocket + Redis 8 pub/sub** |
 | Data source | [NASA Exoplanet Archive](https://exoplanetarchive.ipac.caltech.edu/) TAP API (`pscomppars`) |
 
 ## 💻 Running locally
@@ -59,10 +66,10 @@ git clone https://github.com/CaoDuyTung86/exoplanet-explorer.git
 cd exoplanet-explorer && pnpm install
 ```
 
-Start Postgres, then run the first ingest (this also applies the migrations):
+Start Postgres and Redis, then run the first ingest (this also applies the migrations):
 
 ```bash
-docker compose up -d db
+docker compose up -d db redis
 ```
 
 ```bash
@@ -91,6 +98,9 @@ came from the API and amber when the app has fallen back to a degraded source.
 
 **The frontend also runs on its own**, without the backend: it falls back to fetching NASA
 directly and computing everything in the browser, and says so in a banner.
+
+Redis is optional too. Without it, presence still works for everyone connected to the same
+API process; the API logs which mode it chose and reports it at `GET /health`.
 
 | Script | Purpose |
 | --- | --- |

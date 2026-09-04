@@ -17,15 +17,19 @@ time.
 
 ## Stack
 
-FastAPI · asyncpg · Postgres 17 · numpy · httpx · uvicorn
+FastAPI · asyncpg · Postgres 17 · Redis 8 · numpy · httpx · uvicorn · argon2
 
 ## Quick start
 
-From the repository root, start the database:
+From the repository root, start the database and Redis:
 
 ```bash
-docker compose up -d db
+docker compose up -d db redis
 ```
+
+Redis is optional — presence falls back to a single-process registry without it, and the
+API logs which mode it started in — but it is one container and it is what makes presence
+work across more than one API process.
 
 Then create the environment and run the first ingest (this applies migrations too):
 
@@ -63,6 +67,53 @@ docker compose --profile api up -d --build
 | `GET /v1/planets/{id}` | Full record for one planet |
 | `GET /v1/stats` | Aggregates for the stats panel, computed in SQL |
 | `POST /v1/admin/ingest` | Trigger an ingest. **Needs auth before this is public.** |
+
+Accounts and presence (Phase 3):
+
+| Route | Purpose |
+| --- | --- |
+| `POST /v1/auth/register` | Create an account and start a session |
+| `POST /v1/auth/login` | Start a session. Rate limited per address and email |
+| `POST /v1/auth/logout` | Delete the session row and clear the cookie |
+| `GET /v1/auth/me` | The current user, or `null` when signed out |
+| `GET·POST /v1/me/bookmarks`, `DELETE /v1/me/bookmarks/{planet_id}` | Saved planets |
+| `GET·POST /v1/me/filters`, `DELETE /v1/me/filters/{id}` | Saved filter presets |
+| `GET /v1/presence` | Who is online, and which fan-out backend is live |
+| `WS /v1/ws/presence` | The presence socket itself |
+
+## Accounts
+
+Sessions are **opaque random tokens, not JWTs**. 32 bytes from `secrets.token_urlsafe`
+go to the browser in an httpOnly, SameSite=Lax cookie; only the SHA-256 of the token is
+stored. That means a database leak hands out no live sessions, and `DELETE` on one row
+revokes access immediately — a JWT cannot be revoked without a denylist, which is this
+same table with extra steps.
+
+Passwords are hashed with Argon2id (`argon2-cffi`), whose parameters travel inside the
+hash string, so raising them later re-hashes each account on its next login instead of
+invalidating it. Login answers "email or password is incorrect" for both a wrong password
+and an unknown address, and spends roughly the same time on each, so the endpoint is not
+an account-existence oracle.
+
+## Presence
+
+`app/presence.py` solves two problems that are easy to conflate:
+
+* **Fan-out.** A WebSocket lives inside one process. Every process publishes its events to
+  one Redis channel and subscribes to that same channel, so a visitor on process A sees
+  one on process B. Without Redis the hub uses an in-memory backend — correct, but single
+  process — and says so at startup and in `GET /v1/presence`.
+* **Liveness.** A force-quit tab never sends a close frame, so each peer record carries a
+  TTL that the browser refreshes with a heartbeat. A sweeper turns expiries into `leave`
+  events. `GET /health` reports which backend is running.
+
+The subscribe loop resubscribes with backoff rather than ending when Redis drops. That
+matters more than it looks: if the task simply exited, the process would go on accepting
+WebSockets and forwarding nothing, which looks healthy from every angle.
+
+Visitors never send their own display name: anonymous ones get a callsign derived from
+their peer id, and signed-in ones are named from the session cookie that rode along with
+the WebSocket handshake. Nobody can sign the presence list as somebody else.
 
 ## The binary format
 
@@ -102,7 +153,14 @@ server/
 │   ├── catalog.py       Binary encoder and metadata builder
 │   ├── solar_system.py  The nine seeded Solar System bodies
 │   ├── db.py            asyncpg pool and migration runner
-│   └── config.py        Environment-backed settings
+│   ├── config.py        Environment-backed settings
+│   ├── security.py      Password hashing, session tokens, input rules (no I/O)
+│   ├── auth.py          Users and sessions in Postgres, FastAPI dependencies
+│   ├── presence.py      Presence hub: Redis pub/sub, or in-memory fallback
+│   ├── redis_client.py  One shared, optional Redis connection
+│   ├── ratelimit.py     Fixed-window counter for the login endpoint
+│   ├── routes_account.py  Auth, bookmarks, saved filters
+│   └── routes_presence.py The WebSocket and a snapshot endpoint
 ├── migrations/          Plain .sql, applied in filename order
 └── tests/               pytest, no database required
 ```
@@ -130,3 +188,9 @@ drifting from the TypeScript original it replaced.
   would break saved links the moment sharing ships.
 - **`POST /v1/admin/ingest`** is unauthenticated. It is fine on a laptop and must not be
   exposed as-is.
+- **`COOKIE_SECURE`** must be set to `true` behind HTTPS, or the session cookie will be
+  sent over plain http. It defaults to `false` because local development is
+  `http://localhost`.
+- **The login rate limiter trusts `X-Forwarded-For`.** That is correct behind our own
+  reverse proxy and wrong if the API is ever exposed directly, where the header is
+  spoofable.

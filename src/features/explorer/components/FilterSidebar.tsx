@@ -4,6 +4,7 @@ import { Search, RotateCcw, Globe, Filter, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { translateTerm } from '../lib/astronomyDictionary'
 import { useExplorerStore } from '../stores/explorerStore'
+import { SavedFilters } from './SavedFilters'
 import { DISCOVERY_METHODS } from '../types'
 
 export function FilterSidebar() {
@@ -227,6 +228,9 @@ export function FilterSidebar() {
             })}
           </div>
         </div>
+
+        {/* Only renders for a signed-in visitor. */}
+        <SavedFilters />
       </div>
     </div>
   )

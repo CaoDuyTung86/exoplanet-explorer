@@ -68,11 +68,17 @@ export default defineConfig({
     strictPort: false,
     proxy: {
       // Our own catalog API (server/). Start it with:
-      //   docker compose up -d db
+      //   docker compose up -d db redis
       //   cd server && .venv/Scripts/python -m uvicorn app.main:app --reload
+      //
+      // Override the target with API_PROXY_TARGET when the API is not on 8000 (a port
+      // another project is already using, say).
       '/api/v1': {
-        target: 'http://127.0.0.1:8000',
+        target: process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:8000',
         changeOrigin: true,
+        // Presence runs over /api/v1/ws/presence, and a WebSocket upgrade is not
+        // forwarded unless the proxy is told to expect one.
+        ws: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
       // Legacy direct-to-NASA path, kept only as the degraded fallback for when the

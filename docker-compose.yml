@@ -22,6 +22,23 @@ services:
       timeout: 3s
       retries: 10
 
+  redis:
+    image: redis:8-alpine
+    container_name: exo-redis
+    restart: unless-stopped
+    # Presence is ephemeral by definition, so there is nothing worth persisting: no
+    # volume, and saving to disk is turned off.
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    ports:
+      # Host port 6380 for the same reason the database is on 5433 — no clash with a
+      # Redis already running on this machine.
+      - '6380:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   api:
     build:
       context: ./server
@@ -30,10 +47,13 @@ services:
     environment:
       DATABASE_URL: postgresql://exo:exo_dev_password@db:5432/exoplanets
       CORS_ORIGINS: http://localhost:3001,http://127.0.0.1:3001
+      REDIS_URL: redis://redis:6379/0
     ports:
       - '8000:8000'
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     # Enabled with: docker compose --profile api up -d
     # While developing the API itself, run it on the host with `uvicorn --reload` instead.

@@ -4,3 +4,6 @@ asyncpg==0.30.0
 httpx==0.28.1
 numpy==2.3.4
 pydantic-settings==2.13.0
+# Phase 3: accounts and presence.
+argon2-cffi==25.1.0
+redis==6.4.0

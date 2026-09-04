@@ -57,8 +57,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
 
-      # The suite covers the domain logic and the binary wire format, neither of which
-      # touches the database, so no Postgres service is needed here.
+      # The suite covers the domain logic, the binary wire format and the presence hub.
+      # None of it touches Postgres, and the presence tests stub out Redis, so no service
+      # containers are needed here.
       - name: Tests
         run: python -m pytest -q
 

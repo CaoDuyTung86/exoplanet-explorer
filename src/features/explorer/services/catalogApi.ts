@@ -1,4 +1,5 @@
 import type { ProcessedPlanet } from '../types'
+import { apiBase } from './http'
 
 /**
  * Client for our own catalog API.
@@ -75,11 +76,6 @@ interface CatalogHeader {
 }
 
 export class CatalogApiError extends Error {}
-
-function apiBase(): string {
-  // Falls back to a same-origin /api prefix, which the Vite dev server proxies.
-  return (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '/api'
-}
 
 function readHeader(buffer: ArrayBuffer): CatalogHeader {
   if (buffer.byteLength < HEADER_SIZE) {
