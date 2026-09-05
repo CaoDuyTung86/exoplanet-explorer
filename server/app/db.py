@@ -77,3 +77,16 @@ async def run_migrations() -> list[str]:
             applied.append(path.name)
 
     return applied
+
+
+async def current_run_id() -> int | None:
+    """The most recent successful ingest, or None if there has never been one.
+
+    Every cache in this service keys on it — the encoded catalog in `main`, the rendered
+    preview cards in `routes_share` — because an ingest is the only thing that can make
+    any of them stale. It lives here so there is one definition of "current" rather than
+    one per caller that could drift into meaning something slightly different.
+    """
+    return await pool().fetchval(
+        "SELECT id FROM ingest_runs WHERE status = 'success' ORDER BY id DESC LIMIT 1"
+    )

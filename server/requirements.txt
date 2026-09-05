@@ -7,3 +7,8 @@ pydantic-settings==2.13.0
 # Phase 3: accounts and presence.
 argon2-cffi==25.1.0
 redis==6.4.0
+# Phase 3: the preview card a share link unfurls into. Used for text and compositing
+# only — the sphere and the sky are numpy, which was already here for the binary encoder.
+# Pillow also brings the one scalable font this service has: it bundles Aileron, so no
+# typeface has to be vendored or fetched at build time.
+pillow==12.3.0

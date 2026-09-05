@@ -204,5 +204,18 @@
     "offline": "Không gọi được API — đang tìm trong số hành tinh đã tải, không bỏ qua được lỗi gõ.",
     "keys": "↑↓ di chuyển, ↵ bay tới",
     "close": "Esc"
+  },
+  "share": {
+    "title": "Chia sẻ khung nhìn này",
+    "minting": "Đang tạo liên kết...",
+    "copy": "Sao chép liên kết",
+    "copied": "Đã sao chép. Ai mở liên kết này cũng thấy đúng khung nhìn của bạn.",
+    "hint": "Liên kết mang theo bộ lọc và thứ bạn đang xem.",
+    "cardAlt": "Thẻ xem trước của liên kết này",
+    "cardHint": "Các ứng dụng chat mở liên kết sẽ hiện tấm thẻ này.",
+    "unavailable": "Cần API catalog mới tạo được liên kết, mà hiện không kết nối được.",
+    "notFound": "Liên kết này không còn tồn tại.",
+    "restoreFailed": "Không mở được liên kết — đang hiển thị khung nhìn mặc định.",
+    "missingPlanet": "Liên kết trỏ tới một hành tinh không có trong kho dữ liệu này, nên bộ lọc đã được khôi phục nhưng không chọn hành tinh nào."
   }
 }

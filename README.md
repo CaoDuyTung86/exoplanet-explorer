@@ -46,6 +46,15 @@ physical properties, and compare candidates against our own Solar System.
   reaches the comparison; genuine typos are caught by a `pg_trgm` GIN index. A fuzzy match
   is capped below the literal band, so a guess can add results to the bottom of the list
   but never displace what you actually typed. Ctrl/⌘+K from anywhere.
+- **Shareable views** — one button turns your filters and whatever you are looking at
+  into a ten-character link. The slug is a digest of the view rather than a random
+  string, so sharing the same thing twice gives back the same link, and a slider nudged
+  and put back yields the link you already had. Only what you actually changed is stored:
+  a filter left at its default follows the default later instead of freezing it. Pasted
+  into a chat window the link unfurls into a **planet passport** — a card the API draws
+  from the catalog row itself: the world lit in its own colour, six measurements, and the
+  habitability score, with a dash wherever the archive has no number rather than an
+  invented one.
 - **English / Vietnamese** — including a dictionary for astronomical terms
   (*Radial Velocity* → *Vận tốc xuyên tâm*).
 
@@ -170,10 +179,11 @@ See [`server/README.md`](server/README.md) for the API, the binary format, and t
 ## 🗺️ Roadmap
 
 Phases 1 and 2 (the cleanup, and the ingest pipeline behind our own API) are done, and
-so is most of Phase 3: accounts, realtime presence, the time machine, similarity search
-and typo-tolerant search. Still open there: shareable permalinks and server-rendered
-share images. Phase 4 is infrastructure — scheduled ingest first, since the measurement
-history only grows when the ingest actually runs.
+so is most of Phase 3: accounts, realtime presence, the time machine, similarity search,
+typo-tolerant search, shareable permalinks and the preview cards they unfurl into. Still
+open there: self-made tours, which are an ordered list of permalinks plus commentary.
+Phase 4 is infrastructure — scheduled ingest first, since the measurement history only
+grows when the ingest actually runs.
 
 **See [ROADMAP.md](ROADMAP.md) for the phased plan and current progress.**
 

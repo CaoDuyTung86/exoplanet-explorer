@@ -204,5 +204,18 @@
     "offline": "The catalog API is unreachable — searching the planets already loaded, without typo tolerance.",
     "keys": "↑↓ to move, ↵ to fly there",
     "close": "Esc"
+  },
+  "share": {
+    "title": "Share this view",
+    "minting": "Building the link...",
+    "copy": "Copy link",
+    "copied": "Copied. Anyone with this link sees exactly this view.",
+    "hint": "This link carries your filters and whatever you were looking at.",
+    "cardAlt": "The preview card this link unfurls into",
+    "cardHint": "Chat apps that follow the link show this card.",
+    "unavailable": "Links need the catalog API, which is not reachable right now.",
+    "notFound": "That link does not exist any more.",
+    "restoreFailed": "Could not open that link — showing the default view instead.",
+    "missingPlanet": "The link points at a planet this catalog does not have, so the filters were restored but nothing was selected."
   }
 }

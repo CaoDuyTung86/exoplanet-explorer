@@ -19,6 +19,10 @@ import { playSound } from '../services/audio'
 import { ambientSynth } from '../services/ambientSynth'
 import { useTranslation } from 'react-i18next'
 import { translateTerm } from '../lib/astronomyDictionary'
+import { recordCameraPose, takePendingCameraPose } from '../lib/cameraPose'
+
+/** Fallback look-at when OrbitControls has not mounted yet. Never mutated. */
+const ORIGIN = new THREE.Vector3(0, 0, 0)
 
 /** Tooltip that follows the hovered planet in 3D space */
 function PlanetTooltip() {
@@ -80,6 +84,7 @@ function CameraController() {
   const selectedPlanet = useExplorerStore((s) => s.selectedPlanet)
   const flightTrigger = useExplorerStore((s) => s.flightTrigger)
   const cameraResetTrigger = useExplorerStore((s) => s.cameraResetTrigger)
+  const introCompleted = useExplorerStore((s) => s.introCompleted)
 
   const isFlyingTo = useRef(false)
   const isReturning = useRef(false)
@@ -130,6 +135,29 @@ function CameraController() {
   useFrame((_, delta) => {
     // @ts-expect-error R3F controls typing
     const oc = controls as { target: THREE.Vector3; update: () => void } | undefined
+
+    // A shared link that carries a camera puts it here. Jumped to rather than flown to:
+    // the visitor asked for this view, not for a trip to it. Taken before anything else
+    // this frame so the lerps below start from where the link says, not from the
+    // overview.
+    //
+    // Held back until the intro is over, because `IntroSequence` drives the camera on
+    // its own and would overwrite the pose on the same frame. Opening such a link ends
+    // the intro immediately (see `applySharedState`), so this waits one frame, not three
+    // and a half seconds.
+    const requested = introCompleted ? takePendingCameraPose() : null
+    if (requested) {
+      camera.position.set(...requested.position)
+      if (oc) {
+        oc.target.set(...requested.target)
+        oc.update()
+      }
+      isFlyingTo.current = false
+      isReturning.current = false
+    }
+
+    // Mirrored out for the share button. Two vector copies per frame, no allocation.
+    recordCameraPose(camera.position, oc?.target ?? ORIGIN)
 
     if (selectedPlanet) {
       const worldPos = getPlanetWorldPosition(selectedPlanet.id) ??

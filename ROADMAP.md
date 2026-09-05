@@ -4,8 +4,9 @@
 > Nó chứa: dự án là gì, kiến trúc hiện tại, các quyết định đã chốt, việc đã làm và việc còn lại.
 > Khi mở chat mới, chỉ cần nói *"đọc ROADMAP.md rồi làm tiếp Giai đoạn X"* là đủ.
 >
-> **Cập nhật lần cuối:** 2026-09-04 · **Đã xong:** Giai đoạn 1, 2, và phần realtime +
-> tài khoản của Giai đoạn 3 · **Tiếp theo:** phần còn lại của Giai đoạn 3
+> **Cập nhật lần cuối:** 2026-09-05 · **Đã xong:** Giai đoạn 1, 2, và phần realtime +
+> tài khoản + permalink + thẻ xem trước của Giai đoạn 3 · **Tiếp theo:** "tour" — mục
+> cuối cùng của Giai đoạn 3
 
 ---
 
@@ -39,6 +40,7 @@ Repo: `github.com/CaoDuyTung86/exoplanet-explorer` · License MIT
                      │  users · sessions   │      │  rate-limit keys │
                      │  bookmarks          │      └────────┬─────────┘
                      │  saved_filters      │               │
+                     │  shared_views       │               │
                      └──────────┬──────────┘               │
                                 ▼                          ▼
                   ┌────────────────────────────────────────────────┐
@@ -51,6 +53,8 @@ Repo: `github.com/CaoDuyTung86/exoplanet-explorer` · License MIT
                   │  /v1/ws/presence   WebSocket                   │
                   │  /v1/planets/{id}/similar  k-NN trên cube      │
                   │  /v1/search        trigram, tha lỗi gõ         │
+                  │  /v1/share         permalink, slug = nội dung  │
+                  │  /s/{slug}         trang OG + ảnh thẻ 1200x630 │
                   │  ETag · Cache-Control · gzip                   │
                   └────────────────────────────────────────────────┘
                                 ▼
@@ -100,6 +104,13 @@ phách) → cả hai chết → 7 hành tinh curated (banner hổ phách). Khôn
 | `server/migrations/004_search.sql` | `pg_trgm` + cột generated `name_key`/`host_key` + GIN |
 | `src/features/explorer/components/PlanetSearch.tsx` | Bảng lệnh Ctrl/⌘+K: tìm rồi bay tới |
 | `src/features/explorer/services/searchApi.ts` | Client `/v1/search` + đường dự phòng khi API chết |
+| `server/app/share.py` | Dạng chuẩn của một khung nhìn + slug từ nội dung (thuần, không I/O) |
+| `server/app/routes_share.py` | `POST /v1/share` · `GET /v1/share/{slug}` |
+| `server/migrations/005_share.sql` | `shared_views` + cột generated `focus_planet_id` |
+| `src/features/explorer/lib/cameraPose.ts` | Gương camera ra ngoài Canvas + hàng đợi khôi phục |
+| `src/features/explorer/lib/shareState.ts` | Đọc khung nhìn hiện tại ra / đặt khung nhìn được chia sẻ vào |
+| `src/features/explorer/components/ShareView.tsx` | Nút 🔗 + panel copy link + xem trước thẻ |
+| `server/app/og.py` | Dựng thẻ 1200×630: mô hình thẻ + vẽ (thuần, không I/O) |
 | `docker-compose.yml` | Postgres · Redis (+ API qua `--profile api`) |
 
 ---
@@ -190,6 +201,8 @@ Ingest thật: 6.278 dòng từ NASA + 9 thiên thể Hệ Mặt Trời = 6.287 
 - [x] **Cỗ máy thời gian** — phát lại bầu trời đầy dần + lịch sử hiệu chỉnh từng hành tinh
 - [x] **Tìm hành tinh tương đồng** — k-NN trên `cube`
 - [x] **Tìm kiếm chịu lỗi gõ** — `pg_trgm` + bảng lệnh `Ctrl/⌘+K`
+- [x] **Permalink chia sẻ** — slug 10 ký tự là chính nội dung khung nhìn (2026-09-05)
+- [x] **Thẻ xem trước** — link chia sẻ bung ra "hộ chiếu hành tinh" 1200×630 (2026-09-05)
 
 Chi tiết:
 
@@ -342,12 +355,132 @@ Chi tiết:
       banner nói rõ** chế độ này không tha lỗi gõ — không có chỉ mục thì không có trigram.
 - [x] Thêm **19 test** (tổng 158): `test_search.py`
 
+##### Permalink chia sẻ (2026-09-05)
+
+- [x] `POST /v1/share` + `GET /v1/share/{slug}` — khung nhìn hiện tại thành mười ký tự
+      dán được vào chỗ chat. Nút 🔗 trên thanh trên cùng, mở link ra là bản đồ dựng lại
+      đúng cảnh đó.
+- [x] **Slug chính là nội dung, không phải chuỗi ngẫu nhiên.** SHA-256 của trạng thái đã
+      chuẩn hóa, cắt còn 10 ký tự base32. Chia sẻ cùng một khung nhìn hai lần thì nhận lại
+      **đúng một link và đúng một hàng**, nên kéo con trượt qua lại rồi bấm chia sẻ liên
+      tục cũng không sinh ra một bảng đầy bản gần-giống-nhau. Đổi lại: slug không phải là
+      bí mật đoán không ra — nhưng một khung nhìn được chia sẻ vốn công khai, nó là dấu
+      trang vào một kho dữ liệu ai cũng xem được, không phải một chiếc chìa khóa.
+- [x] Bảng chữ base32 của Crockford (bỏ `i`, `l`, `o`, `u`): slug đọc qua điện thoại hay
+      gõ lại từ ảnh chụp màn hình không có cặp ký tự nào nhìn giống nhau.
+- [x] **Chỉ lưu thứ người chia sẻ đã đổi.** Bộ lọc để nguyên mặc định thì không phải là ý
+      kiến, nên bị bỏ khỏi dạng chuẩn. Lý do thật không phải để payload nhỏ mà là ý nghĩa:
+      sang năm trần thanh bán kính có nới ra, cái link của người chưa từng đụng vào thanh
+      đó **nên** nới theo, vì họ chưa bao giờ nói gì khác. Link ghim cả mặc định là link
+      âm thầm đóng băng toàn bộ UI của đúng cái ngày nó được tạo.
+- [x] Hệ quả kiểm chứng được: đẩy một con trượt rồi kéo về chỗ cũ và chia sẻ lại → **ra
+      lại đúng cái link ban đầu**.
+- [x] **Danh sách được sắp xếp trước khi băm.** Tick *Transit* rồi *Microlensing* và tick
+      ngược lại là cùng một khung nhìn; thứ tự bấm chuột không phải thứ đem đi chia sẻ.
+- [x] **Một link mang hành tinh đang chọn *hoặc* vị trí camera, không bao giờ mang cả
+      hai.** Khi đang chọn một hành tinh thì camera là *hệ quả*: `CameraController` bay
+      tới rồi bám theo nó từng khung hình, nên tư thế camera lưu lại sẽ bị ghi đè ngay
+      trong một frame — mà hành tinh cũng không còn nằm ở chỗ cũ nữa. Giữ cả hai là để một
+      cái link tự mâu thuẫn với chính nó.
+- [x] Camera được làm tròn tới hàng phần trăm — nhỏ hơn quãng một frame damping trôi — nên
+      hai lần chia sẻ cùng một cảnh đứng yên cho ra cùng một link.
+- [x] **Server xác thực, không lưu nguyên si.** Trạng thái đến từ trình duyệt và sẽ được
+      phát lại cho người khác: khóa nằm trong danh sách trắng, khoảng bị kẹp về biên,
+      khoảng ngược đầu thì đảo lại (thanh trượt đọc ngược vẫn là cảnh có thật), chuỗi bị
+      cắt, `NaN`/`Infinity` bị từ chối.
+- [x] **Hành tinh trong link được kiểm tra tồn tại ngay lúc tạo.** Link trỏ vào hư không
+      là link hỏng ngay từ lúc sinh ra, và người còn sửa được là người đang đứng đây — chứ
+      không phải người lạ nhận nó một tuần sau.
+- [x] Cột generated `focus_planet_id` thay vì cột do ứng dụng ghi — cùng lập luận với
+      `name_key` ở 004: giá trị là một hàm của hàng dữ liệu thì không lệch được.
+- [x] `created_by` để `ON DELETE SET NULL`: xóa tài khoản người tạo không được làm hỏng
+      link đang nằm trong tay người khác.
+- [x] `GET` vừa đọc vừa đếm trong **một câu lệnh** (`UPDATE ... RETURNING`). Endpoint này
+      vì thế là một lần ghi và không đặt cache header — đổi lại `last_viewed_at` cho biết
+      link nào chưa ai mở bao giờ, là thứ để dọn dẹp về sau.
+- [x] **Link ghim một chỗ thì bỏ qua đoạn intro.** Đoạn bay vào 3,5 giây tồn tại để giới
+      thiệu bản đồ cho người vừa tới; người mở một link cụ thể thì đã xin một chỗ cụ thể
+      rồi, và intro sẽ dành 3,5 giây lái camera đi khỏi đúng chỗ đó. Link chỉ có bộ lọc
+      thì vẫn được xem intro.
+- [x] `?v=` **được giữ nguyên trên thanh địa chỉ** sau khi khôi phục. Đó là cái link người
+      ta được gửi; F5 phải ra lại đúng cảnh đó, và khi họ bắt đầu di chuyển thì thanh địa
+      chỉ chậm một nhịp vẫn đỡ khó hiểu hơn là nó âm thầm biến thành thứ khác.
+- [x] Link trỏ tới hành tinh mà kho dữ liệu này không có (đang chạy đường dự phòng NASA)
+      thì **bộ lọc vẫn được khôi phục** và có banner nói rõ là không chọn được hành tinh —
+      thay vì im lặng bỏ qua một nửa cái link.
+- [x] Panel chia sẻ luôn hiện URL trong ô chọn được, kể cả khi đã copy thành công:
+      `navigator.clipboard` cần secure context và có thể bị từ chối, mà một nút chia sẻ
+      chỉ biết nói "đã copy" thì vô dụng đúng vào lúc nó nói dối.
+- [x] Thanh header lên `z-40`: các dropdown của nó (chia sẻ, tài khoản, presence) mở xuống
+      đè lên bản đồ, mà thẻ chi tiết hành tinh cũng ở `z-30` nên trước đây thắng nhờ thứ
+      tự DOM. Lỗi có sẵn, permalink chỉ là thứ làm nó lộ ra.
+- [x] Thêm **62 test** (tổng 220): `test_share.py` — trong đó có một test đối chiếu
+      `DEFAULT_FILTERS` bên Python với bản TypeScript, vì đó là hằng số duy nhất bị chép
+      làm hai bản trong tính năng này.
+
+##### Thẻ xem trước — "hộ chiếu hành tinh" (2026-09-05)
+
+- [x] `GET /s/{slug}` + `GET /s/{slug}/card.png` — dán link vào khung chat thì nó mở ra
+      thành một tấm thẻ 1200×630: hành tinh được chiếu sáng bằng đúng màu trong catalog,
+      sáu con số đo, và điểm sống được.
+- [x] **Vẽ chứ không chụp màn hình.** Render cảnh WebGL thật ở server nghĩa là một
+      Chromium headless cho mỗi request — vài trăm MB để chụp sáu nghìn chấm mà thu nhỏ
+      xuống 1200×630 thì cũng không phân giải nổi. Câu hỏi một tấm preview phải trả lời là
+      "đây là thế giới nào, có đáng bấm không", và đó là câu hỏi về chữ. Nên quả cầu là
+      shading Lambert trên numpy, phần còn lại là một bảng số.
+- [x] **Chữ chỉ dùng ASCII, có chủ ý.** Pillow đóng gói đúng một font vector (Aileron
+      Regular) và bộ ký tự kèm theo chỉ có Latin cơ bản: gạch ngang dài, dấu nhân, ký hiệu
+      Trái Đất đều ra ô `.notdef`. Cách sửa hiển nhiên là nhét một font đầy đủ vào repo —
+      đã không làm: đổi lại chỉ tốn một hàm `ascii_text`, và đơn vị đo chuyển lên *nhãn*,
+      nơi "EARTH RADII / 1.63" vốn đọc dễ hơn "Radius / 1.63 R⊕". Kiểm chứng từng glyph
+      thay vì đoán: `·` và `°` **có** trong font nên được giữ lại — bỏ dấu chấm giữa là
+      biến "Host Kepler-452 · Transit · 2015" thành một dòng có hai khoảng trống vô cớ.
+- [x] **`/s/{slug}` nằm ngoài `/v1`.** `/v1` là hợp đồng có phiên bản với client mình tự
+      viết; `/s/{slug}` là một *cái link* — nó nằm lại trong log chat, trong bookmark,
+      trong ảnh chụp màn hình, những thứ sống lâu hơn mọi con số phiên bản mình đặt vào đó.
+- [x] **Trả 200 kèm HTML, không phải 302 sang app.** Redirect là cách làm hiển nhiên và nó
+      phá hỏng toàn bộ tính năng: crawler đi theo redirect sẽ tới `index.html` tĩnh của
+      SPA, mà thẻ OG trong đó tả bản đồ nói chung và **không thể** tả link cụ thể này —
+      trạng thái nằm trong database, một file build sẵn lúc deploy không biết gì về nó.
+      Nên thẻ được phục vụ tại đây, còn trình duyệt thì bị đẩy đi bằng `<meta refresh>`
+      cộng `location.replace` (thay vì `href =`, để cú nhảy không nằm lại trong nút Back).
+- [x] **Không route nào trong hai cái này đếm lượt xem.** `view_count` sinh ra để phân biệt
+      link có người mở với link không ai đụng tới, mà crawler bung preview không phải là
+      một người mở link — mọi ứng dụng chat mà cái link đi qua sẽ thổi phồng con số cho
+      một link chỉ được dán đúng một lần. Việc đếm vẫn nằm ở `GET /v1/share/{slug}`, cái
+      mà chính app gọi sau khi bản đồ đã thật sự dựng xong khung nhìn.
+- [x] **Thẻ được cache theo `(slug, run_id)`, ETag lấy trên chính chuỗi byte.** Ảnh là hàm
+      thuần của trạng thái đã lưu cộng hàng dữ liệu phía sau, nên thứ duy nhất làm nó cũ
+      đi là một lần ingest. Hệ quả: starfield phải **tất định theo slug** — một bầu trời
+      đổi mỗi request sẽ đổi ETag mỗi request và không tầng cache nào giữ được gì.
+- [x] `Cache-Control: max-age=3600`, **không** `immutable` như `catalog.bin`: payload
+      catalog mang id snapshot ngay trong URL nên thật sự không đổi được, còn URL này giữ
+      nguyên tên trong khi hành tinh phía sau bị ingest sau đo lại.
+- [x] **Thẻ cho link không ghim hành tinh không in ra số hành tinh khớp.** Bộ lọc khớp
+      những hành tinh nào là do `applyFilters` ở trình duyệt quyết định; dịch lại luật đó
+      sang SQL chỉ để có một con số đặt lên tấm ảnh là tạo ra bản sao thứ ba của nó — loại
+      bản sao lệch đi âm thầm rồi nói dối rất tự tin. Thẻ liệt kê **điều đã được chọn**,
+      cộng kích thước catalog, là con số dịch vụ này thật sự nắm.
+- [x] Ô nào NASA không có số thì in dấu gạch. Một cột trống không phải số 0 và không được
+      phép vẽ ra như số 0.
+- [x] Chỉ có **một trường thật sự do người dùng nhập** đi tới thẻ meta: ô tìm kiếm nằm
+      trong khung nhìn được chia sẻ. Vì thế `preview_html` là một hàm thuần có test, chứ
+      không phải một f-string nằm trong handler chỉ chạy được khi có database.
+- [x] Vite proxy `/s/` bằng **biểu thức chính quy**, không phải tiền tố `/s`: tiền tố sẽ
+      nuốt luôn `/src/main.tsx` và dev server hết phục vụ nổi mã nguồn của chính nó. Mẫu
+      dùng đúng bảng chữ Crockford ở đúng độ dài slug. README có sẵn dòng nginx tương ứng
+      — link chia sẻ 404 là kiểu hỏng không ai phát hiện cho tới lúc người khác bấm vào.
+- [x] Panel chia sẻ hiện luôn tấm thẻ ngay dưới ô link: nó là **cùng một URL** crawler sẽ
+      lấy, nên thứ trên màn hình đúng là thứ sẽ xuất hiện trong khung chat. Ảnh hỏng thì
+      tự gỡ mình lẫn dòng chú thích đi, thay vì để lại một khung trống hứa hẹn điều không
+      tới.
+- [x] Thêm **35 test** (tổng 255): `test_og.py`
+
 #### 🔜 Còn lại của Giai đoạn 3
 
-- [ ] Permalink chia sẻ: filter + vị trí camera + hành tinh đang chọn → short URL
-      (id đã là slug ổn định nên link sẽ không mục)
-- [ ] OG image render phía server → link share hiện "hộ chiếu hành tinh"
-- [ ] "Tour" tự tạo (phần còn lại của mục tài khoản)
+- [ ] "Tour" tự tạo (phần còn lại của mục tài khoản). Permalink là một nửa của nó — một
+      tour là một danh sách permalink có thứ tự cộng lời dẫn. Thẻ xem trước là nửa còn
+      thiếu của cái nửa kia: một tour được chia sẻ nên bung ra thẻ của chặng đầu tiên.
 
 ### 🔜 Giai đoạn 4 — Hạ tầng
 
@@ -397,6 +530,15 @@ Chi tiết:
 | 2026-09-04 | **Phiên đăng nhập = opaque token, không dùng JWT** | JWT không thu hồi được nếu không có denylist — mà denylist chính là bảng `sessions` này cộng thêm việc. Token ngẫu nhiên + lưu SHA-256: rò database không lộ phiên đang sống, `DELETE` một dòng là thu hồi tức thì, và tra cứu là truy vấn theo primary key |
 | 2026-09-04 | Cookie httpOnly + SameSite=Lax thay vì lưu token trong `localStorage` | httpOnly nghĩa là XSS không đọc được token; SameSite=Lax chặn cookie trong POST cross-site, tức là chặn CSRF. Đổi lại phải bật `allow_credentials` trong CORS và đặt `COOKIE_SECURE=true` khi chạy HTTPS |
 | 2026-09-04 | **Argon2id** (`argon2-cffi`) chứ không phải bcrypt | Memory-hard nên GPU không tăng tốc nhiều; tham số nằm ngay trong chuỗi hash nên nâng cấp về sau chỉ cần re-hash lúc đăng nhập |
+| 2026-09-05 | **Slug của permalink = digest của trạng thái**, không phải chuỗi ngẫu nhiên | Chia sẻ cùng một khung nhìn hai lần phải ra cùng một link và cùng một hàng, nếu không thì mỗi lần kéo con trượt lại đẻ ra một bản gần-giống-nhau. Slug vì thế không phải bí mật — nhưng khung nhìn được chia sẻ vốn công khai, nó là dấu trang chứ không phải chìa khóa |
+| 2026-09-05 | Permalink **lưu trên server**, không nhét hết vào fragment của URL | Fragment không bao giờ được gửi lên server nên không crawler nào dựng được thẻ preview — mà OG image là mục kế tiếp. Thêm nữa, cả bộ lọc nhét inline làm URL dài tới mức app chat cắt bớt |
+| 2026-09-05 | Chỉ lưu **phần khác mặc định** | Bộ lọc để nguyên không phải là ý kiến. Mặc định nới ra sau này thì link của người chưa từng chạm vào nó nên nới theo; ghim cả mặc định là đóng băng UI của đúng ngày tạo link |
+| 2026-09-05 | Thẻ xem trước **tự vẽ bằng Pillow + numpy**, không dùng headless browser | Render cảnh WebGL thật cần vài trăm MB Chromium cho mỗi request, để chụp sáu nghìn chấm mà thu xuống 1200×630 cũng không phân giải nổi. Preview phải trả lời "đây là thế giới nào" — một câu hỏi về chữ và số, không phải về pixel của cảnh 3D |
+| 2026-09-05 | **Không nhét font vào repo**, dùng font Pillow đóng gói sẵn và giới hạn chữ ở ASCII | Font đầy đủ là cách sửa hiển nhiên nhưng thêm một file nhị phân cùng giấy phép của nó vào repo. Đổi lại chỉ tốn một hàm `ascii_text` và đơn vị đo dời lên nhãn ("EARTH RADII / 1.63"), vốn đọc dễ hơn. `·` và `°` được kiểm chứng từng glyph rồi mới giữ lại |
+| 2026-09-05 | `/s/{slug}` **nằm ngoài `/v1`** và trả **200 HTML**, không phải 302 | `/v1` là hợp đồng có phiên bản với client mình viết; một cái link thì nằm lại trong chat log và ảnh chụp màn hình, sống lâu hơn mọi số phiên bản. Và redirect sẽ đưa crawler tới `index.html` tĩnh — file build sẵn lúc deploy không thể tả một link mà trạng thái nằm trong database |
+| 2026-09-05 | Route thẻ xem trước **không đếm `view_count`** | Crawler bung preview không phải một người mở link. Mọi ứng dụng chat mà link đi qua sẽ thổi phồng con số cho một link chỉ được dán một lần. Việc đếm ở lại `GET /v1/share/{slug}`, cái mà app gọi sau khi đã dựng xong khung nhìn |
+| 2026-09-05 | Thẻ của link không ghim hành tinh **không in số hành tinh khớp** | Luật khớp nằm ở `applyFilters` phía client. Dịch sang SQL để lấy một con số đặt lên ảnh là bản sao thứ ba của cùng một luật — thứ lệch đi âm thầm rồi nói dối tự tin. Thẻ liệt kê điều đã được chọn, cộng kích thước catalog là con số server thật sự nắm |
+| 2026-09-05 | Link mang **hành tinh hoặc camera**, không mang cả hai | Đang chọn hành tinh thì camera là hệ quả — `CameraController` bay tới rồi bám theo quỹ đạo, tư thế lưu lại bị ghi đè trong một frame. Giữ cả hai là để link tự mâu thuẫn |
 | 2026-09-04 | Sai mật khẩu và không có tài khoản trả **cùng một thông báo** | Nếu khác nhau thì endpoint đăng nhập trở thành công cụ dò xem email nào đã đăng ký. Có băm giả một lần khi email không tồn tại để thời gian phản hồi không lộ ra điều đó |
 | 2026-09-04 | **Server tự đặt tên hiển thị cho khách ẩn danh**, không nhận tên do client gửi | Tên này hiện cạnh tên người khác trong danh sách presence. Nếu client tự khai thì ai cũng ký tên thành người khác được. Callsign suy ra từ peer id nên reconnect vẫn giữ nguyên tên |
 | 2026-09-04 | Hậu tố callsign dùng **6 ký tự hex** thay vì 4 | 4 ký tự = 16 bit; ở mức trần 200 người thì xác suất trùng ~26%, tức là hai người cùng tên trong một phòng. Test `test_different_ids_get_different_callsigns` phát hiện ra điều này |
@@ -493,6 +635,25 @@ set API_PROXY_TARGET=http://127.0.0.1:8010 && pnpm dev
 - Presence chỉ phát `planetId`, chưa phát vị trí camera. Muốn thấy con trỏ của người khác
   trong không gian 3D thì cần thêm, kèm throttle vì camera đổi mỗi khung hình.
 - `sessions` chưa có UI "đăng xuất khỏi mọi thiết bị" dù dữ liệu đã đủ để làm.
+- **`shared_views` chưa có job dọn.** `last_viewed_at` đã được ghi mỗi lần mở, nên biết
+  được link nào tạo ra rồi không ai đụng tới — nhưng chưa có gì xóa chúng. Cùng một job
+  định kỳ với việc dọn `sessions` hết hạn ở Giai đoạn 4.
+- Permalink chưa có mục "link tôi đã tạo" dù `created_by` đã được ghi cho người đăng nhập.
+- **Thẻ xem trước chỉ có tiếng Anh.** App song ngữ nhưng tấm thẻ thì không: nhãn được viết
+  cứng trong `og.py`. Thêm `?lang=` là đủ về mặt route, nhưng font Pillow đóng gói không
+  có dấu tiếng Việt — nên mục này thật ra là mục "nhét một font vào repo", và nó đáng làm
+  cùng lúc với việc muốn chữ đậm (font hiện tại chỉ có một nét, tiêu đề đang giả đậm bằng
+  `stroke_width=1`).
+- Cache thẻ là dict trong tiến trình. Chạy nhiều tiến trình API sau load balancer thì mỗi
+  tiến trình tự vẽ lại một lần — chấp nhận được (một tấm thẻ mất ~0,3 s và ETag vẫn khớp
+  nhau vì render là tất định), nhưng chỗ đúng của nó là Redis, cùng lúc với phần cache
+  catalog.
+- `og.py` giả định Pillow ≥ 10.1 vì `ImageFont.load_default(size=...)` chỉ trả về font
+  vector từ bản đó. Requirements đã ghim `pillow==12.3.0`, nhưng nếu ai đó hạ phiên bản
+  thì chữ sẽ tụt xuống bitmap 10px chứ không báo lỗi.
+- `DEFAULT_FILTERS` giờ tồn tại hai bản: `src/features/explorer/types/index.ts` và
+  `server/app/share.py`. Có test đối chiếu (`test_share.py`) nên lệch là gãy CI chứ không
+  âm thầm, nhưng vẫn là hai bản.
 - Route `src/routes/_authenticated/` **vẫn** không xác thực gì. Auth đã có thật rồi nhưng
   bản đồ cố tình cho xem ẩn danh, nên thư mục này giờ chỉ còn là di sản — nên gộp vào
   `routes/index.tsx`.

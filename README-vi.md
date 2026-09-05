@@ -47,6 +47,14 @@ theo thông số vật lý, và so sánh với chính Hệ Mặt Trời của ch
   phép so sánh; lỗi gõ thật thì do chỉ mục GIN `pg_trgm` bắt. Điểm của một khớp gần đúng
   bị chặn dưới dải khớp nguyên văn, nên nó chỉ thêm kết quả vào cuối danh sách chứ không
   đẩy được thứ bạn thật sự gõ xuống dưới. Bấm Ctrl/⌘+K ở bất cứ đâu.
+- **Chia sẻ khung nhìn** — một nút biến bộ lọc cùng thứ bạn đang xem thành một link mười
+  ký tự. Slug là digest của chính khung nhìn chứ không phải chuỗi ngẫu nhiên, nên chia sẻ
+  cùng một cảnh hai lần ra cùng một link, và kéo con trượt rồi trả về chỗ cũ thì nhận lại
+  đúng link ban đầu. Chỉ những gì bạn thật sự đổi mới được lưu: bộ lọc để nguyên mặc định
+  sẽ đi theo mặc định về sau chứ không bị đóng băng. Dán vào khung chat, link mở ra thành
+  một **"hộ chiếu hành tinh"** — tấm thẻ do API vẽ thẳng từ hàng dữ liệu: thế giới đó được
+  chiếu sáng bằng đúng màu của nó, sáu con số đo, và điểm sống được; chỗ nào kho dữ liệu
+  không có số thì để dấu gạch chứ không bịa ra.
 - **Anh / Việt** — có từ điển riêng cho thuật ngữ thiên văn
   (*Radial Velocity* → *Vận tốc xuyên tâm*).
 
@@ -171,7 +179,8 @@ Xem [`server/README.md`](server/README.md) để biết chi tiết API, định 
 
 Giai đoạn 1 và 2 (dọn dẹp, và pipeline ingest + API) đã xong, Giai đoạn 3 cũng gần trọn:
 tài khoản, presence realtime, cỗ máy thời gian, tìm hành tinh tương đồng và tìm kiếm tha
-lỗi gõ. Còn lại ở giai đoạn này là permalink chia sẻ và ảnh share render phía server. Giai
+lỗi gõ, permalink chia sẻ và tấm thẻ xem trước mà link mở ra. Còn lại ở giai đoạn này là
+"tour" tự tạo — vốn chỉ là một danh sách permalink có thứ tự cộng lời dẫn. Giai
 đoạn 4 là hạ tầng — trước hết là chạy ingest tự động, vì lịch sử đo đạc chỉ dài thêm khi
 ingest thật sự chạy.
 

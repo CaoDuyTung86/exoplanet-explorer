@@ -22,6 +22,7 @@ from . import (
     redis_client,
     routes_account,
     routes_presence,
+    routes_share,
     search,
     similarity,
 )
@@ -85,15 +86,9 @@ app.add_middleware(
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 
-async def _current_run_id() -> int | None:
-    return await db.pool().fetchval(
-        "SELECT id FROM ingest_runs WHERE status = 'success' ORDER BY id DESC LIMIT 1"
-    )
-
-
 async def _ensure_cache() -> dict[str, Any]:
     """Rebuild the cached payloads if an ingest has landed since we last looked."""
-    run_id = await _current_run_id()
+    run_id = await db.current_run_id()
     if run_id is None:
         raise HTTPException(
             status_code=503,
@@ -554,3 +549,7 @@ async def trigger_ingest() -> dict[str, Any]:
 
 app.include_router(routes_account.router)
 app.include_router(routes_presence.router)
+app.include_router(routes_share.router)
+# Outside /v1: the share link and its preview card are a public URL people paste, not an
+# API surface a client is written against. See the note on `public_router`.
+app.include_router(routes_share.public_router)

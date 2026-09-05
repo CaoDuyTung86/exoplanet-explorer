@@ -4,14 +4,23 @@
     {
       "name": "api",
       "runtimeExecutable": ".venv/Scripts/python.exe",
-      "runtimeArgs": ["-m", "uvicorn", "app.main:app", "--port", "8010", "--reload"],
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--port",
+        "8010",
+        "--reload"
+      ],
       "cwd": "server",
       "port": 8010
     },
     {
       "name": "web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
+      "runtimeArgs": [
+        "dev"
+      ],
       "port": 3001
     },
     {
@@ -22,6 +31,18 @@
         "set API_PROXY_TARGET=http://127.0.0.1:8010 && pnpm dev -- --port 3002 --strictPort"
       ],
       "port": 3002
+    },
+    {
+      "name": "web-3005",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "dev",
+        "--",
+        "--port",
+        "3005",
+        "--strictPort"
+      ],
+      "port": 3005
     }
   ]
 }

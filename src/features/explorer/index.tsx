@@ -16,6 +16,10 @@ import { TimeMachine } from './components/TimeMachine'
 import { AccountMenu } from './components/AccountMenu'
 import { PresenceBar } from './components/PresenceBar'
 import { PlanetSearch } from './components/PlanetSearch'
+import { ShareView } from './components/ShareView'
+import { fetchShare, slugFromLocation } from './services/shareApi'
+import { applySharedState } from './lib/shareState'
+import { ApiError } from './services/http'
 import { useAccountStore } from './stores/accountStore'
 import { usePresenceStore } from './stores/presenceStore'
 import { useTranslation } from 'react-i18next'
@@ -28,6 +32,7 @@ export function ExplorerPage() {
   const [isMuted, setIsMuted] = useState(() => isAudioMuted())
   const [dataSource, setDataSource] = useState<DataSource | null>(null)
   const [loadWarning, setLoadWarning] = useState<string | null>(null)
+  const [shareNotice, setShareNotice] = useState<string | null>(null)
   const setPlanets = useExplorerStore((s) => s.setPlanets)
   const setLoading = useExplorerStore((s) => s.setLoading)
   const isLoading = useExplorerStore((s) => s.isLoading)
@@ -160,6 +165,52 @@ export function ExplorerPage() {
     return () => { cancelled = true }
   }, [planets.length, setPlanets, setLoading, t])
 
+  // A link someone was sent. Applied once the catalog is in memory: the focused planet
+  // has to be looked up in it, and filters applied to an empty array filter nothing.
+  //
+  // The `?v=` is deliberately left in the address bar afterwards rather than cleaned
+  // away. It is the link the visitor was given; a refresh should still land on the same
+  // view, and the moment they start moving around, the address bar being one view behind
+  // is less confusing than it having silently become something else.
+  const shareHandled = useRef(false)
+
+  useEffect(() => {
+    if (shareHandled.current) return
+
+    const slug = slugFromLocation()
+    if (!slug) {
+      shareHandled.current = true
+      return
+    }
+    // Wait for whichever source won the race above; a shared view is a view *of* the
+    // catalog.
+    if (planets.length === 0) return
+
+    shareHandled.current = true
+    let cancelled = false
+
+    fetchShare(slug)
+      .then((link) => {
+        if (cancelled) return
+        const { missingFocus } = applySharedState(link.state)
+        // The filters and the camera still landed — only the planet is missing, which
+        // happens when the map is running off the NASA fallback rather than our catalog.
+        if (missingFocus) setShareNotice(t('share.missingPlanet'))
+      })
+      .catch((cause) => {
+        if (cancelled) return
+        setShareNotice(
+          cause instanceof ApiError && cause.status === 404
+            ? t('share.notFound')
+            : t('share.restoreFailed')
+        )
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [planets.length, t])
+
   // Start BGM on first interaction (Autoplay policy bypass via capture phase)
   useEffect(() => {
     const unlockAudio = () => {
@@ -177,8 +228,10 @@ export function ExplorerPage() {
 
   return (
     <div className='flex h-screen flex-col bg-slate-950 text-white overflow-hidden dark:bg-slate-950 dark:text-white bg-slate-50 text-slate-900 transition-colors duration-300'>
-      {/* Top Navigation Bar */}
-      <header className='flex h-12 shrink-0 items-center justify-between border-b border-white/5 dark:border-white/5 border-slate-300 bg-slate-950/95 dark:bg-slate-950/95 bg-white/95 px-4 backdrop-blur-md z-30 transition-colors duration-300'>
+      {/* Top Navigation Bar. z-40 rather than z-30 because the header's dropdowns —
+          share, account, presence — open downwards over the map, and the planet detail
+          card sits at z-30 there and would otherwise win on DOM order. */}
+      <header className='flex h-12 shrink-0 items-center justify-between border-b border-white/5 dark:border-white/5 border-slate-300 bg-slate-950/95 dark:bg-slate-950/95 bg-white/95 px-4 backdrop-blur-md z-40 transition-colors duration-300'>
         <div className='flex items-center gap-3'>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -258,6 +311,7 @@ export function ExplorerPage() {
           </div>
 
           <PresenceBar />
+          <ShareView />
           <AccountMenu />
 
           <ThemeToggle />
@@ -299,20 +353,29 @@ export function ExplorerPage() {
         </div>
       )}
 
-      {/* Degraded-mode banner. The old code failed silently; a visitor had no way to
-          tell whether they were looking at 6,000 planets or the seven-planet fallback. */}
-      {loadWarning && (
-        <div className='flex shrink-0 items-center gap-2 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-600 dark:text-amber-300'>
-          <TriangleAlert className='h-3.5 w-3.5 shrink-0' />
-          <span className='flex-1'>{loadWarning}</span>
-          <button
-            onClick={() => setLoadWarning(null)}
-            className='rounded px-2 py-0.5 font-medium transition-colors hover:bg-amber-500/20'
+      {/* Anything the visitor is owed an explanation for. The old code failed silently;
+          a visitor had no way to tell whether they were looking at 6,000 planets or the
+          seven-planet fallback — or whether the link they followed actually landed. */}
+      {[
+        loadWarning ? { key: 'load', text: loadWarning, dismiss: () => setLoadWarning(null) } : null,
+        shareNotice ? { key: 'share', text: shareNotice, dismiss: () => setShareNotice(null) } : null,
+      ]
+        .filter((notice) => notice !== null)
+        .map((notice) => (
+          <div
+            key={notice.key}
+            className='flex shrink-0 items-center gap-2 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-600 dark:text-amber-300'
           >
-            {t('data.dismiss')}
-          </button>
-        </div>
-      )}
+            <TriangleAlert className='h-3.5 w-3.5 shrink-0' />
+            <span className='flex-1'>{notice.text}</span>
+            <button
+              onClick={notice.dismiss}
+              className='rounded px-2 py-0.5 font-medium transition-colors hover:bg-amber-500/20'
+            >
+              {t('data.dismiss')}
+            </button>
+          </div>
+        ))}
 
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden relative">

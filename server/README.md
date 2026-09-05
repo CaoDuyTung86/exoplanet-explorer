@@ -17,7 +17,7 @@ time.
 
 ## Stack
 
-FastAPI · asyncpg · Postgres 17 · Redis 8 · numpy · httpx · uvicorn · argon2
+FastAPI · asyncpg · Postgres 17 · Redis 8 · numpy · httpx · uvicorn · argon2 · Pillow
 
 ## Quick start
 
@@ -84,6 +84,31 @@ Accounts and presence (Phase 3):
 | `GET·POST /v1/me/filters`, `DELETE /v1/me/filters/{id}` | Saved filter presets |
 | `GET /v1/presence` | Who is online, and which fan-out backend is live |
 | `WS /v1/ws/presence` | The presence socket itself |
+
+Shared views (Phase 3):
+
+| Route | Purpose |
+| --- | --- |
+| `POST /v1/share` | Mint the link for a view. Idempotent: the slug is a digest of it |
+| `GET /v1/share/{slug}` | Open a shared view. Counts the view |
+| `GET /s/{slug}` | The public link: Open Graph tags for crawlers, a bounce for people |
+| `GET /s/{slug}/card.png` | The 1200x630 preview card that link unfurls into |
+
+The last two sit outside `/v1` on purpose. `/v1` is a versioned contract with a client we
+ship; `/s/<slug>` is a *link*, and links end up in chat logs and screenshots that outlive
+any version number. Neither counts a view — a crawler unfurling a preview is not a person
+opening the link, and every chat client the link passed through would inflate the number.
+
+**Deploying:** `/s/` has to reach this service from the same origin that serves the app,
+next to the rule that already forwards `/api/v1`. The Vite dev server does it with a
+regular expression (a bare `/s` prefix would also swallow `/src/...`); nginx wants:
+
+```nginx
+location ~ ^/s/[0-9a-hjkmnp-tv-z]{10}(/card\.png)?$ { proxy_pass http://api:8000; }
+```
+
+Without that rule a shared link 404s, which is the sort of breakage nobody notices until
+somebody else clicks it. Set `PUBLIC_BASE_URL` when the app is not on that origin.
 
 ## Accounts
 
@@ -236,6 +261,8 @@ server/
 │   ├── history.py       Measurement revisions and the discovery timeline (no I/O)
 │   ├── similarity.py    Feature vectors: log, standardise, measured-value mask (no I/O)
 │   ├── search.py        Query fold and result ranking for /v1/search (no I/O)
+│   ├── share.py         Canonical form of a shared view, and its slug (no I/O)
+│   ├── og.py            The 1200x630 preview card: model and renderer (no I/O)
 │   ├── solar_system.py  The nine seeded Solar System bodies
 │   ├── db.py            asyncpg pool and migration runner
 │   ├── config.py        Environment-backed settings
@@ -245,7 +272,8 @@ server/
 │   ├── redis_client.py  One shared, optional Redis connection
 │   ├── ratelimit.py     Fixed-window counter for the login endpoint
 │   ├── routes_account.py  Auth, bookmarks, saved filters
-│   └── routes_presence.py The WebSocket and a snapshot endpoint
+│   ├── routes_presence.py The WebSocket and a snapshot endpoint
+│   └── routes_share.py    Permalinks, plus the /s/ preview page and card
 ├── migrations/          Plain .sql, applied in filename order
 └── tests/               pytest, no database required
 ```

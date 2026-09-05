@@ -81,6 +81,18 @@ export default defineConfig({
         ws: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
+      // Share links and their preview cards. Served by the API rather than by the app
+      // because only the API can put this link's planet into the Open Graph tags.
+      //
+      // A regular expression rather than the plain `/s` prefix a proxy entry usually is:
+      // `/s` would also swallow `/src/main.tsx`, and the dev server would stop being able
+      // to serve its own source. The pattern is the slug alphabet from server/app/share.py
+      // (Crockford base32 — no i, l, o or u) at its exact length, so only a real link
+      // matches. No rewrite: the API serves these paths under the same names.
+      '^/s/[0-9a-hjkmnp-tv-z]{10}(/card\\.png)?$': {
+        target: process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
       // Legacy direct-to-NASA path, kept only as the degraded fallback for when the
       // catalog API is not running. See services/nasaApi.ts.
       '/api/nasa': {

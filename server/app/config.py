@@ -33,6 +33,17 @@ class Settings(BaseSettings):
     login_attempt_limit: int = 10
     login_attempt_window_seconds: int = 900
 
+    # --- Share links and preview cards (Phase 3) ----------------------------------
+    # Where the map is served from, as seen by the outside world. Set it when the API and
+    # the frontend do not share an origin, or when the public URL is not what the request
+    # says it is (a proxy that does not forward X-Forwarded-*).
+    #
+    # Left empty by default and derived from the request instead, which is right for the
+    # intended deployment: `/s/` is proxied to this service from the same origin that
+    # serves the app, exactly as the Vite dev server does. Then the preview page can
+    # bounce a visitor to `/?v=<slug>` with a relative URL and be correct on any port.
+    public_base_url: str = ""
+
     # --- Presence (Phase 3) -------------------------------------------------------
     # Redis carries presence between API processes. Optional: with no Redis reachable
     # the hub falls back to a single-process in-memory registry and says so in the logs.
